@@ -2,7 +2,7 @@
 reads an environment variable directly — that keeps config sources traceable
 to one spot instead of scattered os.getenv() calls."""
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # BaseSettings automatically reads environment variables and populates typed fields.
 # It also validates types at startup. If any field is not valid the app fails at startup itself.
@@ -26,8 +26,7 @@ class Settings(BaseSettings):
     inventory_days_of_cover_max: int = 21
     inventory_random_seed: int = 42
 
-    class Config:
-        env_file = ".env"
+    model_config = SettingsConfigDict(env_file=".env")
 
 
 settings = Settings() # This instance is imported everywhere.
