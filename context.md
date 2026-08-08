@@ -2,7 +2,7 @@
 
 Running state of the build. Read this first in any new session to get up to speed without re-explaining.
 
-## Status: Phase 0 complete and committed. Phase 1 (data ingestion) in progress — DB schema, session layer, and a live Postgres container are all built and verified end-to-end. Ingestion script not yet written.
+## Status: Phase 0 complete and committed. **Phase 1 (data ingestion) complete and verified end-to-end** — 913,000 real sales rows and 500 synthesized inventory rows are loaded in the live Postgres container. Starting Phase 2 (Demand Forecast Agent).
 
 ## What's built so far
 - Directory structure: `backend/app/{agents,models,api,db,services}`, `backend/data/{raw,processed}`, `backend/notebooks`, `backend/tests`, `frontend/src/{components,pages,api}`, `docs/`.
@@ -20,6 +20,10 @@ Running state of the build. Read this first in any new session to get up to spee
 - `docker-compose.yml` (project root) — minimal, Postgres-only for now (`argus-postgres` container, `argus_pgdata` named volume, port 5432). Backend/frontend services join this file in Phase 9, not before.
 - **Real bug found and fixed**: `config.py`'s `env_file=".env"` resolved relative to the process's CWD, not the project root — running from `backend/` silently missed the real `.env` and fell back to hardcoded defaults with no error. Fixed by anchoring to `config.py`'s own file location: `_PROJECT_ROOT = Path(__file__).resolve().parents[2]`, then `env_file=_PROJECT_ROOT / ".env"`. Caught by manually testing from `backend/` with a distinctive `.env` value, confirmed via `backend/tests/test_config.py` (3 tests, including a CWD-change simulation).
 - Verified end-to-end against the real Postgres container (not just SQLite unit tests): ran `init_db()` from `backend/`, confirmed all 5 tables exist via `psql \dt`. Full chain — compose → config → session → models — proven working together.
+- `backend/app/services/data_ingestion.py` — `load_and_clean_sales()` (validate columns, coerce/drop bad dates, drop negative sales, drop duplicates), `load_sales_records()` and `synthesize_inventory()` (both delete-then-insert for idempotency, using `bulk_insert_mappings` for speed), `run_ingestion()` entrypoint, runnable directly via `python -m app.services.data_ingestion`.
+  - **Second real bug found and fixed**: `psycopg2` can't adapt numpy scalar types (`numpy.int64`, etc.) that pandas produces — would have thrown `can't adapt type 'numpy.int64'` against real Postgres, but passed silently against SQLite in unit tests (SQLite's driver is more permissive). Added `_to_native_records()` to convert numpy scalars to native Python types before insert. Caught by deliberately validating against the real Postgres container instead of trusting SQLite-backed tests alone — same lesson as the `.env` bug, now a established habit for this project.
+  - Ran against the full real dataset (not just test fixtures): 913,000 sales rows loaded, 500 inventory rows synthesized (10 stores × 50 items, as expected), spot-checked in Postgres directly.
+  - `backend/tests/test_data_ingestion.py` — 7 tests covering cleaning edge cases (bad dates, negative sales, duplicates, missing columns) and DB logic (idempotency, one-row-per-SKU, seeded reproducibility) against in-memory SQLite.
 
 ## Key decisions made and why
 - **Frontend is plain JavaScript/JSX, not TypeScript.** `design_architecture.md`'s original diagram said "React + TypeScript" but `techstack.md` and `style_guide.md` both specify plain JS with no TS compiler. Fixed the diagram label to match; JS is the source of truth going forward.
@@ -45,7 +49,8 @@ Running state of the build. Read this first in any new session to get up to spee
 - **Update `README.md`, `context.md`, `backlog.md` before every commit, not after** — added to `CLAUDE.md` Ground Rules. The user checks these are current as part of their decision to commit.
 
 ## Next up
-- Phase 1: the cleaning/loading + inventory-synthesis script for `train.csv` into Postgres (DB and session layer are ready; this is the last piece of Phase 1).
+- Phase 2: Demand Forecast Agent — `backend/app/models/forecast_model.py` (XGBoost train/predict) then `backend/app/agents/forecast_agent.py` (typed `run()` entrypoint), reading from `sales_records` now that it's populated.
 
 ## Local dev notes
 - Postgres runs via `docker compose up -d` (project root). Check status: `docker compose ps`. Real `.env` (git-ignored) must exist at the project root — copy from `.env.example` if missing.
+- To (re)populate the database from the CSV: `cd backend && argus-venv/bin/python -m app.services.data_ingestion` (idempotent — safe to re-run).

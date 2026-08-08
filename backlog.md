@@ -3,7 +3,7 @@
 Pending work, known gaps, and deferred items. Update as items complete or new ones surface.
 
 ## Build order (from CLAUDE.md, not yet done)
-- [ ] 1. Data ingestion + cleaning (Kaggle Store Item Demand Forecasting) — in progress (DB models, session layer, and Postgres container done and verified end-to-end; ingestion script + inventory synthesis still pending)
+- [x] 1. Data ingestion + cleaning (Kaggle Store Item Demand Forecasting) — complete. 913,000 sales rows + 500 synthesized inventory rows loaded and verified in the live Postgres container.
 - [ ] 2. Demand Forecast Agent (XGBoost baseline)
 - [ ] 3. Anomaly/Risk Agent (rule-based thresholds + z-score)
 - [ ] 4. Inventory Optimization Agent (EOQ / safety stock)
@@ -37,3 +37,4 @@ Pending work, known gaps, and deferred items. Update as items complete or new on
 
 ## Completed
 - [x] Phase 0 scaffolding: directory structure, docs moved to `docs/`, `.gitignore`, `.env.example`, `requirements.txt`, `config.py`, git initialized, dataset downloaded.
+- [x] Phase 1 data ingestion: DB models/session layer (tested against SQLite + verified against live Postgres), Postgres-only `docker-compose.yml`, ingestion script (cleaning, idempotent load, inventory synthesis), 18 backend tests passing. Two real bugs found and fixed via testing against real Postgres, not just SQLite unit tests (see `context.md`).

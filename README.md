@@ -6,7 +6,7 @@ Built as a portfolio project for an AI-Analyst role.
 
 ## Status
 
-**Phase 0 complete, Phase 1 (data ingestion) in progress.** Project structure, config, and a live Postgres instance (via Docker Compose) are in place; SQLAlchemy database schema and session layer are built, tested, and verified end-to-end against real Postgres. The ingestion/loading script is the last piece of Phase 1. No runnable API/frontend yet. Note: the dataset has no real inventory data, so inventory levels are synthesized at ingestion time from trailing sales averages — see `context.md` for the exact formula and assumptions. This section will be updated as each phase lands; see `context.md` for a detailed running log and `backlog.md` for what's left.
+**Phase 0 and Phase 1 (data ingestion) complete.** The database is live and populated: 913,000 real sales rows plus a synthesized inventory snapshot (500 store-item rows) in Postgres via Docker Compose, all verified end-to-end (not just unit tests). No runnable API/frontend yet — that starts with the Forecast Agent in Phase 2. Note: the dataset has no real inventory data, so inventory levels are synthesized at ingestion time from trailing sales averages — see `context.md` for the exact formula and assumptions. This section will be updated as each phase lands; see `context.md` for a detailed running log and `backlog.md` for what's left.
 
 ## Architecture
 
@@ -77,8 +77,11 @@ cp .env.example .env
 # Start Postgres (Docker Compose is Postgres-only for now — full stack is Phase 9)
 docker compose up -d
 
-# Create the database tables
-cd backend && argus-venv/bin/python -c "from app.db.session import init_db; init_db()"
+# Create the database tables, then load and clean the dataset
+# (idempotent — safe to re-run; also synthesizes the inventory snapshot)
+cd backend
+argus-venv/bin/python -c "from app.db.session import init_db; init_db()"
+argus-venv/bin/python -m app.services.data_ingestion
 ```
 
 Dataset: the Kaggle [Store Item Demand Forecasting](https://www.kaggle.com/c/demand-forecasting-kernels-only/data) `train.csv` and `test.csv` are expected in `backend/data/raw/` (not committed — see `.gitignore`).
