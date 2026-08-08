@@ -45,6 +45,8 @@ argus/
 - Keep the LLM layer swappable — call it through a single `llm_client.py` wrapper, not scattered API calls, so switching Groq → Ollama later is a one-file change.
 - No secrets committed. All keys via `.env`, with `.env.example` kept up to date.
 - Write code and comments in plain, direct language. No filler docstrings, no restating the obvious.
+- **Test after every file, not at the end.** As soon as a file/unit is built, write and run tests for it before moving to the next file. Catches failures immediately instead of discovering them after several more files are built on top of a broken one.
+- **Update `README.md`, `context.md`, and `backlog.md` before every commit** — not after. The user reviews these updates as part of deciding whether to commit, so they must be current *before* a commit message is proposed, every time, no exceptions.
 
 ## Commands (fill in once scaffolded)
 ```bash

@@ -2,7 +2,7 @@
 
 Running state of the build. Read this first in any new session to get up to speed without re-explaining.
 
-## Status: Phase 0 complete and committed. Phase 1 (data ingestion) in progress — DB schema + session layer defined and tested, ingestion script + Postgres container not yet built.
+## Status: Phase 0 complete and committed. Phase 1 (data ingestion) in progress — DB schema, session layer, and a live Postgres container are all built and verified end-to-end. Ingestion script not yet written.
 
 ## What's built so far
 - Directory structure: `backend/app/{agents,models,api,db,services}`, `backend/data/{raw,processed}`, `backend/notebooks`, `backend/tests`, `frontend/src/{components,pages,api}`, `docs/`.
@@ -17,6 +17,9 @@ Running state of the build. Read this first in any new session to get up to spee
 - `backend/app/db/session.py` — `engine`, `SessionLocal` factory, `get_db()` (FastAPI dependency, generator-based cleanup), `init_db()` (creates tables via `Base.metadata.create_all`, no Alembic — fixed schema, one-week batch project).
 - `backend/pytest.ini`, `backend/tests/test_models.py`, `backend/tests/test_session.py` — 8 tests, all passing, run against in-memory SQLite (no live Postgres needed for these). Established as a per-file workflow rule going forward (see Working agreements).
 - Python virtual environment created at `backend/argus-venv` (named per user preference, not the generic `venv`), with all of `requirements.txt` installed. `.gitignore` updated to exclude it.
+- `docker-compose.yml` (project root) — minimal, Postgres-only for now (`argus-postgres` container, `argus_pgdata` named volume, port 5432). Backend/frontend services join this file in Phase 9, not before.
+- **Real bug found and fixed**: `config.py`'s `env_file=".env"` resolved relative to the process's CWD, not the project root — running from `backend/` silently missed the real `.env` and fell back to hardcoded defaults with no error. Fixed by anchoring to `config.py`'s own file location: `_PROJECT_ROOT = Path(__file__).resolve().parents[2]`, then `env_file=_PROJECT_ROOT / ".env"`. Caught by manually testing from `backend/` with a distinctive `.env` value, confirmed via `backend/tests/test_config.py` (3 tests, including a CWD-change simulation).
+- Verified end-to-end against the real Postgres container (not just SQLite unit tests): ran `init_db()` from `backend/`, confirmed all 5 tables exist via `psql \dt`. Full chain — compose → config → session → models — proven working together.
 
 ## Key decisions made and why
 - **Frontend is plain JavaScript/JSX, not TypeScript.** `design_architecture.md`'s original diagram said "React + TypeScript" but `techstack.md` and `style_guide.md` both specify plain JS with no TS compiler. Fixed the diagram label to match; JS is the source of truth going forward.
@@ -42,5 +45,7 @@ Running state of the build. Read this first in any new session to get up to spee
 - **Update `README.md`, `context.md`, `backlog.md` before every commit, not after** — added to `CLAUDE.md` Ground Rules. The user checks these are current as part of their decision to commit.
 
 ## Next up
-- Minimal `docker-compose.yml` with just a Postgres service (full stack compose is still Phase 9 — this is only to unblock testing the ingestion script against a real DB).
-- Phase 1: the cleaning/loading + inventory-synthesis script for `train.csv` into Postgres.
+- Phase 1: the cleaning/loading + inventory-synthesis script for `train.csv` into Postgres (DB and session layer are ready; this is the last piece of Phase 1).
+
+## Local dev notes
+- Postgres runs via `docker compose up -d` (project root). Check status: `docker compose ps`. Real `.env` (git-ignored) must exist at the project root — copy from `.env.example` if missing.

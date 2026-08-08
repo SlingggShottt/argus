@@ -1,0 +1,18 @@
+# Minimal for now — just Postgres, so the ingestion script has a real DB to
+# write to. Backend/frontend services join this file in Phase 9.
+services:
+  db:
+    image: postgres:16
+    container_name: argus-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: argus
+      POSTGRES_PASSWORD: argus
+      POSTGRES_DB: argus
+    ports:
+      - "5432:5432"
+    volumes:
+      - argus_pgdata:/var/lib/postgresql/data
+
+volumes:
+  argus_pgdata:
