@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# Environment
+.env
+
+# Node / frontend
+node_modules/
+frontend/dist/
+
+# Data (raw dataset is large and reproducible from Kaggle, don't commit it)
+backend/data/raw/
+backend/data/processed/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Logs
+*.log
