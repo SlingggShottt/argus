@@ -19,8 +19,15 @@ class Settings(BaseSettings):
     stockout_risk_threshold: float = 0.9
     anomaly_zscore_threshold: float = 2.5
 
+    # Inventory synthesis (dataset has no real inventory data, see context.md)
+    lead_time_days: int = 7
+    inventory_lookback_days: int = 90
+    inventory_days_of_cover_min: int = 3
+    inventory_days_of_cover_max: int = 21
+    inventory_random_seed: int = 42
+
     class Config:
         env_file = ".env"
 
 
-settings = Settings()
+settings = Settings() # This instance is imported everywhere.

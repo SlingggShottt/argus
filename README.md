@@ -6,7 +6,7 @@ Built as a portfolio project for an AI-Analyst role.
 
 ## Status
 
-**Phase 0 (scaffolding) complete.** Project structure, config, and dataset are in place. No runnable application yet — backend agents, API, and frontend are still being built. This section will be updated as each phase lands; see `context.md` for a detailed running log and `backlog.md` for what's left.
+**Phase 0 complete, Phase 1 (data ingestion) in progress.** Project structure, config, and dataset are in place; SQLAlchemy database schema is defined (`backend/app/db/models.py`) but the ingestion/loading script isn't written yet. No runnable application. Note: the dataset has no real inventory data, so inventory levels are synthesized at ingestion time from trailing sales averages — see `context.md` for the exact formula and assumptions. This section will be updated as each phase lands; see `context.md` for a detailed running log and `backlog.md` for what's left.
 
 ## Architecture
 
