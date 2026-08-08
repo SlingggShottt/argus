@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+argus-venv/
 *.egg-info/
 
 # Environment

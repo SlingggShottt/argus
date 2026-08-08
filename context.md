@@ -2,7 +2,7 @@
 
 Running state of the build. Read this first in any new session to get up to speed without re-explaining.
 
-## Status: Phase 0 complete and committed. Phase 1 (data ingestion) in progress — DB schema defined, ingestion script not yet written.
+## Status: Phase 0 complete and committed. Phase 1 (data ingestion) in progress — DB schema + session layer defined and tested, ingestion script + Postgres container not yet built.
 
 ## What's built so far
 - Directory structure: `backend/app/{agents,models,api,db,services}`, `backend/data/{raw,processed}`, `backend/notebooks`, `backend/tests`, `frontend/src/{components,pages,api}`, `docs/`.
@@ -13,7 +13,10 @@ Running state of the build. Read this first in any new session to get up to spee
 - Git repo initialized locally (`git init -b main`) — no commits yet, user commits everything themselves.
 - Kaggle Store Item Demand Forecasting dataset (`train.csv`, `test.csv`) downloaded and placed in `backend/data/raw/`.
 - `backend/app/db/models.py` — SQLAlchemy 2.0 declarative models: `SalesRecord`, `Inventory`, `Forecast`, `RiskFlag`, `Recommendation`. No `Product`/`SKU` dimension table — `store_id`/`item_id` used directly everywhere, matching the dataset's natural grain (no extra product metadata exists to justify one).
-- `config.py`/`.env.example` extended with inventory-synthesis tunables: `lead_time_days` (7), `inventory_lookback_days` (90), `inventory_days_of_cover_min/max` (3/21), `inventory_random_seed` (42).
+- `config.py`/`.env.example` extended with inventory-synthesis tunables: `lead_time_days` (7), `inventory_lookback_days` (90), `inventory_days_of_cover_min/max` (3/21), `inventory_random_seed` (42). `config.py` also updated to Pydantic v2-native `model_config = SettingsConfigDict(...)` (was using the deprecated v1-style `class Config:`).
+- `backend/app/db/session.py` — `engine`, `SessionLocal` factory, `get_db()` (FastAPI dependency, generator-based cleanup), `init_db()` (creates tables via `Base.metadata.create_all`, no Alembic — fixed schema, one-week batch project).
+- `backend/pytest.ini`, `backend/tests/test_models.py`, `backend/tests/test_session.py` — 8 tests, all passing, run against in-memory SQLite (no live Postgres needed for these). Established as a per-file workflow rule going forward (see Working agreements).
+- Python virtual environment created at `backend/argus-venv` (named per user preference, not the generic `venv`), with all of `requirements.txt` installed. `.gitignore` updated to exclude it.
 
 ## Key decisions made and why
 - **Frontend is plain JavaScript/JSX, not TypeScript.** `design_architecture.md`'s original diagram said "React + TypeScript" but `techstack.md` and `style_guide.md` both specify plain JS with no TS compiler. Fixed the diagram label to match; JS is the source of truth going forward.
@@ -35,6 +38,9 @@ Running state of the build. Read this first in any new session to get up to spee
 - Claude explains what a Bash command does and waits for explicit go-ahead before running it, even read-only commands.
 - Commit messages use Conventional Commits prefixes (`feat:`, `fix:`, `docs:`, `chore:`, etc.) plus imperative-mood summary, per user preference (not originally specified in `style_guide.md`).
 - User already knows Pydantic and `.env`-based config — no need to re-explain those from scratch.
+- **Write and run tests for each file immediately after building it, before starting the next file** — added to `CLAUDE.md` Ground Rules. Catch breakage early, not several files later.
+- **Update `README.md`, `context.md`, `backlog.md` before every commit, not after** — added to `CLAUDE.md` Ground Rules. The user checks these are current as part of their decision to commit.
 
 ## Next up
-- Phase 1: `backend/app/db/session.py` (engine/session setup), then the cleaning/loading + inventory-synthesis script for `train.csv` into Postgres.
+- Minimal `docker-compose.yml` with just a Postgres service (full stack compose is still Phase 9 — this is only to unblock testing the ingestion script against a real DB).
+- Phase 1: the cleaning/loading + inventory-synthesis script for `train.csv` into Postgres.

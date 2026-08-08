@@ -3,7 +3,7 @@
 Pending work, known gaps, and deferred items. Update as items complete or new ones surface.
 
 ## Build order (from CLAUDE.md, not yet done)
-- [ ] 1. Data ingestion + cleaning (Kaggle Store Item Demand Forecasting) — in progress (DB models done, ingestion script + inventory synthesis pending)
+- [ ] 1. Data ingestion + cleaning (Kaggle Store Item Demand Forecasting) — in progress (DB models + session layer done and tested; Postgres container, ingestion script, and inventory synthesis still pending)
 - [ ] 2. Demand Forecast Agent (XGBoost baseline)
 - [ ] 3. Anomaly/Risk Agent (rule-based thresholds + z-score)
 - [ ] 4. Inventory Optimization Agent (EOQ / safety stock)

@@ -6,7 +6,7 @@ Built as a portfolio project for an AI-Analyst role.
 
 ## Status
 
-**Phase 0 complete, Phase 1 (data ingestion) in progress.** Project structure, config, and dataset are in place; SQLAlchemy database schema is defined (`backend/app/db/models.py`) but the ingestion/loading script isn't written yet. No runnable application. Note: the dataset has no real inventory data, so inventory levels are synthesized at ingestion time from trailing sales averages — see `context.md` for the exact formula and assumptions. This section will be updated as each phase lands; see `context.md` for a detailed running log and `backlog.md` for what's left.
+**Phase 0 complete, Phase 1 (data ingestion) in progress.** Project structure, config, and dataset are in place; SQLAlchemy database schema and session layer are defined and covered by passing tests (`backend/tests/`), but the ingestion/loading script and a running Postgres instance aren't set up yet. No runnable application. Note: the dataset has no real inventory data, so inventory levels are synthesized at ingestion time from trailing sales averages — see `context.md` for the exact formula and assumptions. This section will be updated as each phase lands; see `context.md` for a detailed running log and `backlog.md` for what's left.
 
 ## Architecture
 
@@ -65,8 +65,8 @@ cd argus
 
 # Backend: create a virtual environment and install dependencies
 cd backend
-python3 -m venv venv
-source venv/bin/activate
+python3 -m venv argus-venv
+source argus-venv/bin/activate
 pip install -r requirements.txt
 
 # Copy the environment template and fill in real values
@@ -77,7 +77,12 @@ cp .env.example .env
 
 Dataset: the Kaggle [Store Item Demand Forecasting](https://www.kaggle.com/c/demand-forecasting-kernels-only/data) `train.csv` and `test.csv` are expected in `backend/data/raw/` (not committed — see `.gitignore`).
 
-Docker Compose / one-command startup and the frontend dev server are not wired up yet (Phases 8-9 of the build plan in `CLAUDE.md`).
+Run backend tests (DB/schema tests run against in-memory SQLite, no Postgres required):
+```bash
+cd backend && argus-venv/bin/pytest -v
+```
+
+Docker Compose / one-command startup and the frontend dev server are not wired up yet (Phases 8-9 of the build plan in `CLAUDE.md`). A minimal Postgres-only container is coming next to unblock the ingestion script.
 
 ## Results
 
