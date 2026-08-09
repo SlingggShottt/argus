@@ -9,7 +9,7 @@ Pending work, known gaps, and deferred items. Update as items complete or new on
 - [x] 4. Inventory Optimization Agent (EOQ / safety stock) — complete. 500 recommendations written, EOQ/safety-stock formulas hand-checked in tests.
 - [x] 5. LangGraph orchestrator tying agents together — complete. Verified end-to-end against Postgres, identical results to individually-run agents.
 - [x] 6. Conversational Insight Agent (Groq-backed) — complete. Verified against real Groq API for all 3 FR-6.3 query types; found and fixed a real tool-calling reliability bug (see Known gaps, now resolved).
-- [ ] 7. FastAPI endpoints exposing all of the above
+- [x] 7. FastAPI endpoints exposing all of the above — complete. All 5 endpoints verified via real HTTP requests against live Postgres + real Groq.
 - [ ] 8. React dashboard (KPIs, alerts, chat)
 - [ ] 9. Docker Compose for local run
 - [ ] 10. AWS deployment (EC2 + S3, optionally RDS)
@@ -36,6 +36,7 @@ Pending work, known gaps, and deferred items. Update as items complete or new on
 - Inventory levels are synthetic, not real (see `context.md` Deviations section for the full formula/assumptions) — worth calling out proactively in the interview before it looks like an oversight.
 - Forecast model uses calendar features only, no lag/rolling-window features — a deliberate v1 simplicity call (avoids recursive multi-step forecasting complexity), documented as a known limitation, not an oversight. Candidate future improvement if time allows.
 - EOQ ordering/holding cost inputs are illustrative placeholders, not real cost data (dataset has no prices at all) — same caveat category as synthetic inventory, worth mentioning proactively in the interview.
+- FastAPI + SQLAlchemy + in-memory SQLite testing requires `StaticPool` (sync route handlers run in a worker thread, SQLite `:memory:` is thread-scoped by default) — documented in `context.md`, worth knowing if adding more API tests later.
 
 ## Completed
 - [x] Phase 0 scaffolding: directory structure, docs moved to `docs/`, `.gitignore`, `.env.example`, `requirements.txt`, `config.py`, git initialized, dataset downloaded.
@@ -45,3 +46,4 @@ Pending work, known gaps, and deferred items. Update as items complete or new on
 - [x] Phase 4 Inventory Optimization Agent: EOQ + safety-stock formulas (hand-checked in tests), 44 backend tests passing (7 new), 500 recommendations verified end-to-end and cross-checked against inventory/forecast data in Postgres.
 - [x] Phase 5 LangGraph orchestrator: Forecast -> Risk -> Inventory as one StateGraph, 46 backend tests passing (2 new), verified end-to-end against Postgres with results identical to the individually-run agents.
 - [x] Phase 6 Conversational Agent: swappable `llm_client.py` + tool-calling `conversational_agent.py`, 55 backend tests passing (10 new, all mocked/no real API calls), verified against the real Groq API for all 3 FR-6.3 query types. Found and fixed a real tool-calling loop bug via testing against the live API, not just mocks.
+- [x] Phase 7 FastAPI endpoints: 4 REST endpoints + health check, 61 backend tests passing (6 new), verified via real HTTP requests (curl) against the live server, Postgres, and Groq. Found and fixed a real FastAPI+SQLite-in-memory threading bug via testing.

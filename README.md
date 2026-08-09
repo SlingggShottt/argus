@@ -6,7 +6,7 @@ Built as a portfolio project for an AI-Analyst role.
 
 ## Status
 
-**Phases 0-6 complete.** The full agent pipeline works end-to-end, including natural-language querying: the three deterministic agents (Forecast, Risk, Inventory) run as one LangGraph pipeline, and the Groq-backed Conversational Agent answers questions grounded in their output via LangChain tool-calling — all verified against the real Groq API, not just mocks. No runnable HTTP API/frontend yet — that's Phase 7 (FastAPI) and Phase 8 (dashboard). Note: the dataset has no real inventory or cost data, so inventory levels and EOQ cost inputs are documented, config-tunable assumptions — see `context.md` for the exact formulas. This section will be updated as each phase lands; see `context.md` for a detailed running log and `backlog.md` for what's left.
+**Phases 0-7 complete — the backend is fully runnable end-to-end.** The full agent pipeline (Forecast -> Risk -> Inventory via LangGraph, plus the Groq-backed Conversational Agent) is exposed over a real FastAPI server, verified with live HTTP requests against Postgres and the real Groq API. Only the React dashboard (Phase 8) remains. Note: the dataset has no real inventory or cost data, so inventory levels and EOQ cost inputs are documented, config-tunable assumptions — see `context.md` for the exact formulas. This section will be updated as each phase lands; see `context.md` for a detailed running log and `backlog.md` for what's left.
 
 ## Architecture
 
@@ -83,6 +83,9 @@ cd backend
 argus-venv/bin/python -c "from app.db.session import init_db; init_db()"
 argus-venv/bin/python -m app.services.data_ingestion
 argus-venv/bin/python -m app.agents.orchestrator
+
+# Start the API server (docs at http://localhost:8000/docs)
+argus-venv/bin/uvicorn app.main:app --reload
 ```
 
 Dataset: the Kaggle [Store Item Demand Forecasting](https://www.kaggle.com/c/demand-forecasting-kernels-only/data) `train.csv` and `test.csv` are expected in `backend/data/raw/` (not committed — see `.gitignore`).
@@ -91,6 +94,8 @@ Run backend tests (DB/schema tests run against in-memory SQLite, no Postgres req
 ```bash
 cd backend && argus-venv/bin/pytest -v
 ```
+
+API endpoints: `GET /api/forecasts/{store_id}/{item_id}`, `GET /api/risks`, `GET /api/recommendations`, `POST /api/query` (natural-language question -> grounded answer). Full OpenAPI docs auto-generated at `/docs`.
 
 The full Docker Compose stack (backend/frontend containers) and the frontend dev server are not wired up yet (Phases 8-9 of the build plan in `CLAUDE.md`).
 

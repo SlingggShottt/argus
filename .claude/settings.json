@@ -3,7 +3,19 @@
     "allow": [
       "Bash(argus-venv/bin/python -c ' *)",
       "Bash(argus-venv/bin/pytest -v)",
-      "Bash(argus-venv/bin/python -m app.agents.conversational_agent)"
+      "Bash(argus-venv/bin/python -m app.agents.conversational_agent)",
+      "Bash(nohup argus-venv/bin/uvicorn app.main:app --port 8000)",
+      "Bash(curl -s http://localhost:8000/health)",
+      "Bash(curl -s \"http://localhost:8000/api/forecasts/1/1\")",
+      "Bash(curl -s \"http://localhost:8000/api/risks?risk_type=stockout&severity=high\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('count:', d['meta']['count']\\); print\\(d['data'][0]\\)\")",
+      "Bash(curl -s \"http://localhost:8000/api/recommendations?store_id=1&item_id=1\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"http://localhost:8000/api/forecasts/999/999\")",
+      "Bash(curl -s -X POST \"http://localhost:8000/api/query\" -H \"Content-Type: application/json\" -d '{\"question\": \"What should I reorder for store 1, item 1?\"}')",
+      "Bash(curl -s \"http://localhost:8000/openapi.json\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(list\\(d['paths'].keys\\(\\)\\)\\)\")",
+      "Bash(pkill -f \"uvicorn app.main:app\")",
+      "Bash(curl -s -o /dev/null -w \"health check http code: %{http_code}\\\\n\" --max-time 2 http://localhost:8000/health)"
     ]
   }
 }
