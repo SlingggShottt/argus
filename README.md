@@ -4,9 +4,11 @@ Agentic decision-intelligence platform for supply chain demand forecasting and i
 
 Built as a portfolio project for an AI-Analyst role.
 
+**Live demo**: [argus-frontend-dfs8.onrender.com](https://argus-frontend-dfs8.onrender.com) — dashboard + chat, backed by the real deployed pipeline. API docs at [argus-backend-a4y6.onrender.com/docs](https://argus-backend-a4y6.onrender.com/docs). Hosted on Render's free tier — the backend may take ~30-60s to wake up on the first request after a period of inactivity (free-tier services spin down when idle); a refresh after that first load should be fast.
+
 ## Status
 
-**Build plan complete (Phases 0-10).** The full stack runs as one command locally (`docker compose up -d`), and deployment prep for Render is done — Dockerfiles are Render-compatible (`$PORT` handling, graceful startup with no data yet), plus a `render.yaml` Blueprint and manual step-by-step instructions in the Deployment section below. The actual signup/deploy is a manual step (no way to automate account creation or dashboard clicks), so it's not yet live. Note: the dataset has no real inventory or cost data, so inventory levels and EOQ cost inputs are documented, config-tunable assumptions — see `context.md` for the exact formulas. See `context.md` for the detailed running log and `backlog.md` for known gaps.
+**Build plan complete (Phases 0-10) and deployed.** The full stack runs as one command locally (`docker compose up -d`) and is live on Render — Postgres, backend, and frontend all deployed and verified end-to-end with real data (see Deployment section below for exactly how). Note: the dataset has no real inventory or cost data, so inventory levels and EOQ cost inputs are documented, config-tunable assumptions — see `context.md` for the exact formulas. See `context.md` for the detailed running log and `backlog.md` for known gaps.
 
 ![Argus dashboard](docs/screenshots/dashboard.png)
 
@@ -114,24 +116,21 @@ npm run dev   # http://localhost:5173, proxies /api to the backend on port 8000
 
 ## Deployment (Render)
 
-Deployed to [Render](https://render.com)'s free tier rather than AWS, to avoid billing/account overhead for a portfolio demo. **These steps are manual** — creating an account and clicking through Render's dashboard isn't something that can be automated from here, and Render's exact current UI/free-tier terms should be checked at signup rather than assumed from this doc.
+Deployed to [Render](https://render.com)'s free tier rather than AWS, to avoid billing/account overhead for a portfolio demo. **These steps are manual** — creating an account and clicking through Render's dashboard isn't something that can be automated from here, and Render's exact current UI/free-tier terms should be checked at signup rather than assumed from this doc. This is also the exact path actually used for the live deployment linked above, including the two real fixes it took.
 
 1. **Push this repo to GitHub** if it isn't already (Render deploys from a connected GitHub repo).
 2. **Sign up at [render.com](https://render.com)** and connect your GitHub account.
-3. **Try the Blueprint first**: in the Render dashboard, "New" -> "Blueprint", pick this repo. Render will read `render.yaml` at the repo root and propose a Postgres database + backend Web Service + frontend Static Site. `render.yaml` is a best-effort file (not verified against the live platform) — if Render flags anything as invalid, fix it directly in the dashboard rather than debugging the YAML blind, or fall back to the manual steps below.
-4. **Manual fallback** (or to double-check what the Blueprint created):
-   - **Database**: New -> PostgreSQL. Note both its internal and external connection strings once created.
-   - **Backend**: New -> Web Service -> this repo -> Docker runtime, Dockerfile path `backend/Dockerfile`, root directory `backend`. Set env vars: `DATABASE_URL` = the database's *internal* connection string, `GROQ_API_KEY` = your key. Render auto-injects `PORT`, which `entrypoint.sh` already respects.
-   - **Frontend**: New -> Static Site -> this repo, root directory `frontend`, build command `npm install && npm run build`, publish directory `dist`. Add a rewrite rule: `/api/*` -> `https://<your-backend-service>.onrender.com/api/*` (use the backend's actual assigned URL, visible once it deploys), and `/*` -> `/index.html`.
-5. **Seed the database.** The deployed backend only seeds itself if `backend/data/raw/train.csv` is present in its container, which it deliberately isn't (never baked into the image — see `context.md`). Instead, seed Render's Postgres from your own machine using its *external* connection string:
+3. **Deploy the Blueprint**: in the Render dashboard, "New" -> "Blueprint", pick this repo. Render reads `render.yaml` at the repo root and proposes a Postgres database + backend Web Service + frontend Static Site — it worked cleanly on the first try (no parse errors), so this is the recommended path, not just a "try it and see" fallback. You'll be prompted for the `GROQ_API_KEY` secret during setup (kept out of the YAML file itself). Click Deploy.
+4. **Fix the frontend's `/api/*` rewrite destination.** `render.yaml` guesses the backend's URL as `https://argus-backend.onrender.com`, but Render appends a random suffix if that exact name is taken (ours became `argus-backend-a4y6`) — check your backend service's actual URL once it's live, and if it doesn't match the guess, update it in **two places**: the `destination` field in `render.yaml` (push the fix — this is the source of truth going forward) *and*, since a `routes:` change didn't auto-resync to the dashboard on push in practice, also fix it directly under the frontend service's **Redirects/Rewrites** tab so it takes effect immediately.
+5. **Seed the database.** The deployed backend only seeds itself if `backend/data/raw/train.csv` is present in its container, which it deliberately isn't (never baked into the image — see `context.md`). Instead, seed Render's Postgres from your own machine using its *external* connection string (Database service -> External Database URL):
    ```bash
    cd backend
    DATABASE_URL="<external connection string from Render>" argus-venv/bin/python -c "from app.db.session import init_db; init_db()"
    DATABASE_URL="<external connection string from Render>" argus-venv/bin/python -m app.services.data_ingestion
    DATABASE_URL="<external connection string from Render>" argus-venv/bin/python -m app.agents.orchestrator
    ```
-   Once seeded, the backend's own `entrypoint.sh` will find existing data on every future boot and skip re-seeding — same idempotent logic as the local Docker Compose flow.
-6. Visit the frontend's Render URL to confirm the live deployment.
+   This is a one-time bootstrap, not a recurring task — once seeded, the backend's own `entrypoint.sh` finds existing data on every future boot and skips re-seeding (same idempotent logic as local Docker Compose), and the dataset is static, not a live feed, so there's nothing to periodically refresh.
+6. Visit the frontend's Render URL and confirm real data loads (not just an empty shell) — that was the actual final check used to confirm this deployment.
 
 ## Results
 
