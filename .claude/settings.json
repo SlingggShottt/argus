@@ -41,7 +41,11 @@
       "Bash(curl -s http://localhost:3000/api/recommendations?store_id=1)",
       "Bash(curl -s \"http://localhost:3000/api/recommendations?store_id=1&item_id=1\")",
       "Bash(node verify-docker.js)",
-      "Bash(rm -rf /tmp/claude-1000/-home-slingggshottt-Desktop-coding-Projects-argus/e5626df3-82a1-41ab-b780-3a7bd62a2ba1/scratchpad/node_modules ~/.cache/ms-playwright /tmp/lint_out.txt *)"
+      "Bash(rm -rf /tmp/claude-1000/-home-slingggshottt-Desktop-coding-Projects-argus/e5626df3-82a1-41ab-b780-3a7bd62a2ba1/scratchpad/node_modules ~/.cache/ms-playwright /tmp/lint_out.txt *)",
+      "Bash(docker network *)",
+      "Bash(docker run *)",
+      "Bash(docker stop *)",
+      "Bash(docker rm *)"
     ],
     "additionalDirectories": [
       "/tmp/claude-1000/-home-slingggshottt-Desktop-coding-Projects-argus/e5626df3-82a1-41ab-b780-3a7bd62a2ba1/scratchpad/node_modules"
