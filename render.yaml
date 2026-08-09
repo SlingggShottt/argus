@@ -32,12 +32,11 @@ services:
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     routes:
-      # Placeholder -- replace with the backend's actual Render URL once it
-      # deploys (its name may get a random suffix if "argus-backend" is
-      # already taken). Everything else can be applied as-is.
+      # Backend's actual assigned URL (Render appended a random suffix
+      # since "argus-backend" alone was taken).
       - type: rewrite
         source: /api/*
-        destination: https://argus-backend.onrender.com/api/*
+        destination: https://argus-backend-a4y6.onrender.com/api/*
       - type: rewrite
         source: /*
         destination: /index.html

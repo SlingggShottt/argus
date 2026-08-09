@@ -2,7 +2,7 @@
 
 Running state of the build. Read this first in any new session to get up to speed without re-explaining.
 
-## Status: Phases 0-9 complete. **Phase 10 (Render deployment) prep complete** — everything that can be verified locally has been (PORT handling, graceful no-CSV startup tested against a real isolated container). `render.yaml` Blueprint + step-by-step manual deployment instructions written to README. The actual deploy (account creation, dashboard clicks) is unavoidably manual and not yet done — that's on the user. This is the last item in the build plan.
+## Status: Phases 0-9 complete. **Phase 10 (Render deployment) actually in progress on the live platform, with the user driving.** `render.yaml` Blueprint deployed cleanly on the first try (no parse errors, all 3 services detected correctly — validates the file was right despite being unverifiable from here). Backend live and healthy (`https://argus-backend-a4y6.onrender.com/health`). One real fix needed: the placeholder backend URL in `render.yaml`'s frontend rewrite rule was wrong (Render appended a `-a4y6` suffix since the plain name was taken) — updated to the real URL and pushed; Blueprint auto-syncs from `render.yaml` on every push, so no dashboard-only edits needed. Still to do: confirm the frontend redeploys with the corrected rewrite, then seed Render's Postgres from the user's local machine via its external connection string.
 
 ## What's built so far
 - Directory structure: `backend/app/{agents,models,api,db,services}`, `backend/data/{raw,processed}`, `backend/notebooks`, `backend/tests`, `frontend/src/{components,pages,api}`, `docs/`.
