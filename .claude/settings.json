@@ -35,7 +35,16 @@
       "Bash(curl -s -o /dev/null -w \"api: %{http_code}\\\\n\" --max-time 2 http://localhost:8000/health)",
       "Bash(npm run *)",
       "Bash(echo \"exit code: $?\")",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(docker compose *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000)",
+      "Bash(curl -s http://localhost:3000/api/recommendations?store_id=1)",
+      "Bash(curl -s \"http://localhost:3000/api/recommendations?store_id=1&item_id=1\")",
+      "Bash(node verify-docker.js)",
+      "Bash(rm -rf /tmp/claude-1000/-home-slingggshottt-Desktop-coding-Projects-argus/e5626df3-82a1-41ab-b780-3a7bd62a2ba1/scratchpad/node_modules ~/.cache/ms-playwright /tmp/lint_out.txt *)"
+    ],
+    "additionalDirectories": [
+      "/tmp/claude-1000/-home-slingggshottt-Desktop-coding-Projects-argus/e5626df3-82a1-41ab-b780-3a7bd62a2ba1/scratchpad/node_modules"
     ]
   }
 }

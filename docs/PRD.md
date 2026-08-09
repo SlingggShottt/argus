@@ -38,7 +38,7 @@ A supply chain / operations analyst or manager at a mid-to-large retail/CPG ente
 | Agent orchestration layer (LangGraph) | Must-have |
 | Conversational query interface | Must-have |
 | Dashboard (KPIs, charts, alerts) | Must-have |
-| Deployed on AWS | Should-have |
+| Deployed on Render (changed from AWS, see context.md) | Should-have |
 | Agent reasoning trace visible in UI | Nice-to-have |
 | Multi-dataset support | Out of scope |
 

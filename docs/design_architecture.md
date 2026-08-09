@@ -94,7 +94,9 @@
 - **Swappable LLM layer**: shows engineering discipline — can point out this could run on Anthropic/OpenAI in production with a one-line change.
 - **Batch + table-backed dashboard**: keeps latency low and avoids overcomplicating with real-time infra that wasn't asked for.
 
-## 5. Deployment Architecture (AWS)
-- EC2 instance running Docker Compose (backend + frontend + Postgres, or Postgres on RDS if time allows).
-- S3 for storing raw dataset / model artifacts.
-- Resource naming prefixed (`argus-*`) per existing AWS lab convention, with a teardown script for cleanup.
+## 5. Deployment Architecture (Render)
+Changed from the original AWS plan to Render's free tier — no billing/account overhead for a portfolio demo, and Render deploys directly from the existing Dockerfiles/docker-compose setup with minimal extra configuration.
+- Backend: a Render Web Service built from `backend/Dockerfile`.
+- Frontend: a Render Web Service (or Static Site) built from `frontend/Dockerfile`/`frontend/dist`.
+- Database: Render's free managed Postgres, replacing the local `db` Docker service for production.
+- Env vars (`DATABASE_URL`, `GROQ_API_KEY`, etc.) configured via Render's dashboard, mirroring `.env.example`.

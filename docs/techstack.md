@@ -27,7 +27,7 @@
 | Component | Choice | Why |
 |---|---|---|
 | Containerization | Docker + Docker Compose | One-command local run, matches existing workflow |
-| Cloud | AWS (EC2, optionally RDS + S3) 
+| Cloud | Render (free tier) | Free hosting for backend + frontend + Postgres, no AWS billing/account overhead for a portfolio demo. Changed from the original AWS plan — see context.md. |
 | CI/CD | Github Actions
 
 ## Dataset

@@ -1,5 +1,7 @@
-# Minimal for now — just Postgres, so the ingestion script has a real DB to
-# write to. Backend/frontend services join this file in Phase 9.
+# Full local stack: Postgres + backend (FastAPI, self-seeds on first boot
+# via entrypoint.sh) + frontend (built React app served by nginx, proxying
+# /api to the backend). `docker-compose up --build` alone, after .env is
+# configured, brings up a fully working, demoable app -- NFR-3.
 services:
   db:
     image: postgres:16
@@ -13,6 +15,39 @@ services:
       - "5432:5432"
     volumes:
       - argus_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U argus"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: argus-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      # Overrides .env's localhost URL -- inside the Docker network
+      # Postgres is reachable by its service name, not localhost.
+      DATABASE_URL: postgresql://argus:argus@db:5432/argus
+    volumes:
+      # Dataset is never baked into the image -- mounted read-only so the
+      # entrypoint's self-seed step can find it on first boot.
+      - ./backend/data:/app/data:ro
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build: ./frontend
+    container_name: argus-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
 
 volumes:
   argus_pgdata:

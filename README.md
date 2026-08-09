@@ -6,7 +6,7 @@ Built as a portfolio project for an AI-Analyst role.
 
 ## Status
 
-**Phases 0-8 complete — the core build is fully runnable and demoable end-to-end.** The full agent pipeline (Forecast -> Risk -> Inventory via LangGraph, plus the Groq-backed Conversational Agent) is exposed over FastAPI and rendered in a React dashboard, verified with a real headless-browser run against live Postgres and the real Groq API, in both light and dark mode. Remaining: Docker Compose full-stack (Phase 9) and AWS deployment (Phase 10, should-have). Note: the dataset has no real inventory or cost data, so inventory levels and EOQ cost inputs are documented, config-tunable assumptions — see `context.md` for the exact formulas. This section will be updated as each phase lands; see `context.md` for a detailed running log and `backlog.md` for what's left.
+**Phases 0-9 complete — the full stack runs as one command.** `docker compose up -d` (with `--build` on first run) brings up Postgres, a self-seeding FastAPI backend, and an nginx-served React frontend — the whole app, verified end-to-end via HTTP and a headless-browser screenshot of the containerized dashboard. Only deployment (Phase 10, should-have — **Render**, not AWS) remains. Note: the dataset has no real inventory or cost data, so inventory levels and EOQ cost inputs are documented, config-tunable assumptions — see `context.md` for the exact formulas. This section will be updated as each phase lands; see `context.md` for a detailed running log and `backlog.md` for what's left.
 
 ![Argus dashboard](docs/screenshots/dashboard.png)
 
@@ -58,26 +58,35 @@ Python 3.11+ / FastAPI / LangGraph / XGBoost / PostgreSQL on the backend, React 
 
 ## Setup
 
-Not yet runnable end-to-end — this section covers what's usable today and will grow as each phase lands.
+### One command (recommended)
 
 ```bash
-# Clone and enter the repo
 git clone <repo-url>
 cd argus
+cp .env.example .env
+# edit .env: set GROQ_API_KEY at minimum
 
+# Dataset: place the Kaggle Store Item Demand Forecasting train.csv
+# (https://www.kaggle.com/c/demand-forecasting-kernels-only/data)
+# at backend/data/raw/train.csv -- not committed, see .gitignore
+
+docker compose up -d --build
+```
+
+That's it — Postgres, the backend (which self-seeds the database and runs the full agent pipeline on first boot only), and the frontend all come up together. App at http://localhost:3000, API directly at http://localhost:8000/docs. First boot takes a few minutes (image build + pipeline seeding); subsequent restarts are fast and skip re-seeding.
+
+### Running services individually (faster iteration during development)
+
+```bash
 # Backend: create a virtual environment and install dependencies
 cd backend
 python3 -m venv argus-venv
 source argus-venv/bin/activate
 pip install -r requirements.txt
-
-# Copy the environment template and fill in real values
 cd ..
-cp .env.example .env
-# edit .env: set DATABASE_URL, GROQ_API_KEY, etc.
 
-# Start Postgres (Docker Compose is Postgres-only for now — full stack is Phase 9)
-docker compose up -d
+# Postgres only
+docker compose up -d db
 
 # Create the database tables and load the dataset, then run the full
 # deterministic pipeline in one shot via the orchestrator (idempotent)
@@ -90,8 +99,6 @@ argus-venv/bin/python -m app.agents.orchestrator
 argus-venv/bin/uvicorn app.main:app --reload
 ```
 
-Dataset: the Kaggle [Store Item Demand Forecasting](https://www.kaggle.com/c/demand-forecasting-kernels-only/data) `train.csv` and `test.csv` are expected in `backend/data/raw/` (not committed — see `.gitignore`).
-
 Run backend tests (DB/schema tests run against in-memory SQLite, no Postgres required):
 ```bash
 cd backend && argus-venv/bin/pytest -v
@@ -99,14 +106,11 @@ cd backend && argus-venv/bin/pytest -v
 
 API endpoints: `GET /api/forecasts/{store_id}/{item_id}`, `GET /api/risks`, `GET /api/recommendations`, `POST /api/query` (natural-language question -> grounded answer). Full OpenAPI docs auto-generated at `/docs`.
 
-**Frontend** (needs the API server running):
 ```bash
 cd frontend
 npm install
 npm run dev   # http://localhost:5173, proxies /api to the backend on port 8000
 ```
-
-The full Docker Compose stack (backend/frontend containers together) is not wired up yet (Phase 9 of the build plan in `CLAUDE.md`).
 
 ## Results
 
@@ -119,6 +123,8 @@ The full Docker Compose stack (backend/frontend containers together) is not wire
 **Conversational queries** (Groq, `llama-3.3-70b-versatile`, via LangChain tool-calling): verified against the real API for all 3 required query types (risk/forecast/recommendation), each resolving in exactly 1 tool call with answers matching the underlying data exactly (e.g. "what's the forecast for store 1 item 1 on 2018-01-05" -> "14.9 units", matching the DB row). Along the way, hit and fixed the exact LLM tool-calling reliability risk flagged in `docs/PRD.md` — see `context.md` for the bug and fix.
 
 **Dashboard**: verified with a real headless-browser run (Playwright) against the live stack — screenshotted in both light and dark mode, including a full chat round-trip against the real Groq API, with zero browser console errors. See screenshot above.
+
+**Full-stack Docker**: `docker compose up -d --build` verified end-to-end — self-seeding backend, nginx-proxied frontend, headless-browser screenshot of the fully containerized app identical to the dev-server version.
 
 ## Project docs
 

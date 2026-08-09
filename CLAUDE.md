@@ -73,7 +73,7 @@ cd backend && pytest
 7. FastAPI endpoints exposing all of the above
 8. React dashboard (KPIs, alerts, chat)
 9. Docker Compose for local run
-10. AWS deployment (EC2 + S3, optionally RDS)
+10. Render deployment (free tier — changed from the original AWS plan, see context.md)
 
 ## What NOT to do
 - Don't add authentication/multi-tenancy — out of scope, wastes build time.
