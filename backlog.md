@@ -7,8 +7,8 @@ Pending work, known gaps, and deferred items. Update as items complete or new on
 - [x] 2. Demand Forecast Agent (XGBoost baseline) — complete. 16.79% MAPE vs. 24.94% seasonal-naive baseline on the real dataset; 15,000 forecast rows verified in Postgres.
 - [x] 3. Anomaly/Risk Agent (rule-based thresholds + z-score) — complete. 87 stockout flags (55 high, 32 medium), 0 anomaly flags (verified as a genuine result, not a bug) on the real dataset.
 - [x] 4. Inventory Optimization Agent (EOQ / safety stock) — complete. 500 recommendations written, EOQ/safety-stock formulas hand-checked in tests.
-- [ ] 5. LangGraph orchestrator tying agents together
-- [ ] 6. Conversational Insight Agent (Groq-backed) — needs Groq API key first
+- [x] 5. LangGraph orchestrator tying agents together — complete. Verified end-to-end against Postgres, identical results to individually-run agents.
+- [ ] 6. Conversational Insight Agent (Groq-backed) — Groq API key already added to local `.env`, ready to build
 - [ ] 7. FastAPI endpoints exposing all of the above
 - [ ] 8. React dashboard (KPIs, alerts, chat)
 - [ ] 9. Docker Compose for local run
@@ -43,3 +43,4 @@ Pending work, known gaps, and deferred items. Update as items complete or new on
 - [x] Phase 2 Demand Forecast Agent: XGBoost model wrapper + agent, temporal holdout evaluation vs. seasonal-naive baseline, 27 backend tests passing (9 new), verified end-to-end against the real 913K-row dataset in Postgres.
 - [x] Phase 3 Anomaly/Risk Agent: stockout severity tiers + rolling-window z-score anomaly detection, 37 backend tests passing (10 new), verified end-to-end against Postgres including an independent diagnostic confirming the zero-anomaly result is genuine, not a silent bug.
 - [x] Phase 4 Inventory Optimization Agent: EOQ + safety-stock formulas (hand-checked in tests), 44 backend tests passing (7 new), 500 recommendations verified end-to-end and cross-checked against inventory/forecast data in Postgres.
+- [x] Phase 5 LangGraph orchestrator: Forecast -> Risk -> Inventory as one StateGraph, 46 backend tests passing (2 new), verified end-to-end against Postgres with results identical to the individually-run agents.

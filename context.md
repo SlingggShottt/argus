@@ -2,7 +2,7 @@
 
 Running state of the build. Read this first in any new session to get up to speed without re-explaining.
 
-## Status: Phases 0-3 complete. **Phase 4 (Inventory Optimization Agent) complete and verified end-to-end** — 500 reorder recommendations (one per SKU) written to Postgres, EOQ/safety-stock formulas hand-checked in tests. All 5 deterministic-pipeline tables (`sales_records`, `inventory`, `forecasts`, `risk_flags`, `recommendations`) are now populated and consistent with each other. Starting Phase 5 (LangGraph orchestrator).
+## Status: Phases 0-4 complete. **Phase 5 (LangGraph orchestrator) complete and verified end-to-end** — Forecast -> Risk -> Inventory now run as one graph (`backend/app/agents/orchestrator.py`), verified against live Postgres producing identical results to the individually-run agents (16.79% MAPE, 87 risk flags, 500 recommendations). All 3 deterministic agents are now wired together; only the Conversational Agent (Phase 6, needs Groq key) and API/frontend remain before the core pipeline is demoable. User has since added a real GROQ_API_KEY to local `.env`.
 
 ## What's built so far
 - Directory structure: `backend/app/{agents,models,api,db,services}`, `backend/data/{raw,processed}`, `backend/notebooks`, `backend/tests`, `frontend/src/{components,pages,api}`, `docs/`.
@@ -40,6 +40,9 @@ Running state of the build. Read this first in any new session to get up to spee
   - **Another documented data gap**: the dataset has no cost/price data at all, so `eoq_ordering_cost` ($50/order) and `eoq_holding_cost_per_unit` ($2/unit/year) are illustrative, config-tunable assumptions — same pattern as inventory synthesis. `service_level_z_score` (1.65, ~95% service level) also added. All three in `config.py`/`.env.example`.
   - **Real result**: 500 recommendations written (one per SKU), cross-checked against `inventory`/`forecasts` in Postgres — e.g. store 1/item 5 has `current_stock` (80.4) already below its computed `reorder_point` (92.7), consistent with that SKU's known thin stock.
   - `backend/tests/test_inventory_agent.py` — 7 tests, including hand-calculated EOQ/safety-stock values verified via `pytest.approx` against the formula computed by hand, not just "did it run without erroring."
+- `backend/app/agents/orchestrator.py` — `run(db) -> OrchestratorOutput`. LangGraph `StateGraph` with 3 nodes (forecast -> risk -> inventory, sequential edges, `PipelineState` TypedDict carrying the DB session + each node's typed output). Each node just calls that agent's own `run()` — orchestrator doesn't duplicate DB logic, only sequencing + logging (NFR-2). Conversational Agent (Phase 6) isn't a graph node yet; it will consume `OrchestratorOutput` as context once built.
+  - **Real result**: ran against live Postgres, produced results identical to the agents run individually (16.79% MAPE, 87 risk flags, 500 recommendations) — confirms the graph wiring doesn't alter behavior, just sequences it. All 5 pipeline tables cross-checked as consistent in one query.
+  - `backend/tests/test_orchestrator.py` — 2 tests: full pipeline runs in dependency order against a seeded in-memory SQLite DB (risk/inventory depend on forecast's output existing first), and idempotency across a full re-run.
 
 ## Key decisions made and why
 - **Frontend is plain JavaScript/JSX, not TypeScript.** `design_architecture.md`'s original diagram said "React + TypeScript" but `techstack.md` and `style_guide.md` both specify plain JS with no TS compiler. Fixed the diagram label to match; JS is the source of truth going forward.
@@ -63,9 +66,10 @@ Running state of the build. Read this first in any new session to get up to spee
 - User already knows Pydantic and `.env`-based config — no need to re-explain those from scratch.
 - **Write and run tests for each file immediately after building it, before starting the next file** — added to `CLAUDE.md` Ground Rules. Catch breakage early, not several files later.
 - **Update `README.md`, `context.md`, `backlog.md` before every commit, not after** — added to `CLAUDE.md` Ground Rules. The user checks these are current as part of their decision to commit.
+- **Mid-build (during Phase 4), user opted out of the detailed per-file walkthrough/interview-Q&A explanations** — build fast, explain everything once the project is ready. Still flag genuinely important design decisions/gaps briefly.
 
 ## Next up
-- Phase 5: LangGraph orchestrator (`backend/app/agents/orchestrator.py`) — sequences Forecast -> Risk -> Inventory, logs intermediate outputs (NFR-2), produces one combined output object for the API/Conversational Agent to consume.
+- Phase 6: Conversational Insight Agent (`backend/app/services/llm_client.py` then `backend/app/agents/conversational_agent.py`) — Groq-backed, swappable LLM wrapper, grounded in `OrchestratorOutput`. User has already added a real `GROQ_API_KEY` to local `.env`, so no need to walk through obtaining one.
 
 ## Local dev notes
 - Postgres runs via `docker compose up -d` (project root). Check status: `docker compose ps`. Real `.env` (git-ignored) must exist at the project root — copy from `.env.example` if missing.

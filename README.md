@@ -6,7 +6,7 @@ Built as a portfolio project for an AI-Analyst role.
 
 ## Status
 
-**Phases 0-4 complete.** All 5 pipeline tables are populated in Postgres and consistent with each other: 913,000 real sales rows, a synthesized inventory snapshot (500 rows), 15,000 demand forecast rows, 87 risk flags, and 500 reorder recommendations — all verified end-to-end, not just unit tests. No runnable API/frontend yet — that starts once the LangGraph orchestrator ties the three deterministic agents together (Phase 5). Note: the dataset has no real inventory or cost data, so inventory levels and EOQ cost inputs are documented, config-tunable assumptions — see `context.md` for the exact formulas. This section will be updated as each phase lands; see `context.md` for a detailed running log and `backlog.md` for what's left.
+**Phases 0-5 complete.** The three deterministic agents (Forecast, Risk, Inventory) now run as one LangGraph pipeline, verified end-to-end against Postgres with results identical to running each agent individually. No runnable API/frontend yet — next up is the Groq-backed Conversational Agent (Phase 6), then FastAPI endpoints (Phase 7) and the dashboard (Phase 8). Note: the dataset has no real inventory or cost data, so inventory levels and EOQ cost inputs are documented, config-tunable assumptions — see `context.md` for the exact formulas. This section will be updated as each phase lands; see `context.md` for a detailed running log and `backlog.md` for what's left.
 
 ## Architecture
 
@@ -77,14 +77,12 @@ cp .env.example .env
 # Start Postgres (Docker Compose is Postgres-only for now — full stack is Phase 9)
 docker compose up -d
 
-# Create the database tables, then run the full deterministic pipeline
-# (each step is idempotent — safe to re-run)
+# Create the database tables and load the dataset, then run the full
+# deterministic pipeline in one shot via the orchestrator (idempotent)
 cd backend
 argus-venv/bin/python -c "from app.db.session import init_db; init_db()"
 argus-venv/bin/python -m app.services.data_ingestion
-argus-venv/bin/python -m app.agents.forecast_agent
-argus-venv/bin/python -m app.agents.risk_agent
-argus-venv/bin/python -m app.agents.inventory_agent
+argus-venv/bin/python -m app.agents.orchestrator
 ```
 
 Dataset: the Kaggle [Store Item Demand Forecasting](https://www.kaggle.com/c/demand-forecasting-kernels-only/data) `train.csv` and `test.csv` are expected in `backend/data/raw/` (not committed — see `.gitignore`).
