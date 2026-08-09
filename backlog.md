@@ -8,7 +8,7 @@ Pending work, known gaps, and deferred items. Update as items complete or new on
 - [x] 3. Anomaly/Risk Agent (rule-based thresholds + z-score) — complete. 87 stockout flags (55 high, 32 medium), 0 anomaly flags (verified as a genuine result, not a bug) on the real dataset.
 - [x] 4. Inventory Optimization Agent (EOQ / safety stock) — complete. 500 recommendations written, EOQ/safety-stock formulas hand-checked in tests.
 - [x] 5. LangGraph orchestrator tying agents together — complete. Verified end-to-end against Postgres, identical results to individually-run agents.
-- [ ] 6. Conversational Insight Agent (Groq-backed) — Groq API key already added to local `.env`, ready to build
+- [x] 6. Conversational Insight Agent (Groq-backed) — complete. Verified against real Groq API for all 3 FR-6.3 query types; found and fixed a real tool-calling reliability bug (see Known gaps, now resolved).
 - [ ] 7. FastAPI endpoints exposing all of the above
 - [ ] 8. React dashboard (KPIs, alerts, chat)
 - [ ] 9. Docker Compose for local run
@@ -30,7 +30,7 @@ Pending work, known gaps, and deferred items. Update as items complete or new on
 - [ ] MCP exposure of agent tools
 
 ## Known gaps / risks to watch
-- LLM tool-calling reliability with Groq-hosted open models may need prompt tuning — budget extra time when we hit Phase 6 (per PRD Risks section).
+- ~~LLM tool-calling reliability with Groq-hosted open models may need prompt tuning~~ — RESOLVED in Phase 6: the model looped calling `get_forecast` repeatedly instead of answering; fixed with a stronger system prompt ("call each tool at most once... do not call the same tool again"). Good interview story: predicted risk in `docs/PRD.md`, actually hit it, fixed it, verified the fix against the real API.
 - Forecast quality depends on dataset cleanliness — don't skip EDA during Phase 1.
 - `sample_submission.csv` was deliberately excluded from the repo — if `test.csv`'s Kaggle-specific time-based public/private split logic matters later, revisit whether `test.csv` is even usable for our purposes (we may only need `train.csv` for a self-made holdout split, per SRS FR-2.3 "against a holdout set").
 - Inventory levels are synthetic, not real (see `context.md` Deviations section for the full formula/assumptions) — worth calling out proactively in the interview before it looks like an oversight.
@@ -44,3 +44,4 @@ Pending work, known gaps, and deferred items. Update as items complete or new on
 - [x] Phase 3 Anomaly/Risk Agent: stockout severity tiers + rolling-window z-score anomaly detection, 37 backend tests passing (10 new), verified end-to-end against Postgres including an independent diagnostic confirming the zero-anomaly result is genuine, not a silent bug.
 - [x] Phase 4 Inventory Optimization Agent: EOQ + safety-stock formulas (hand-checked in tests), 44 backend tests passing (7 new), 500 recommendations verified end-to-end and cross-checked against inventory/forecast data in Postgres.
 - [x] Phase 5 LangGraph orchestrator: Forecast -> Risk -> Inventory as one StateGraph, 46 backend tests passing (2 new), verified end-to-end against Postgres with results identical to the individually-run agents.
+- [x] Phase 6 Conversational Agent: swappable `llm_client.py` + tool-calling `conversational_agent.py`, 55 backend tests passing (10 new, all mocked/no real API calls), verified against the real Groq API for all 3 FR-6.3 query types. Found and fixed a real tool-calling loop bug via testing against the live API, not just mocks.

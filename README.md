@@ -6,7 +6,7 @@ Built as a portfolio project for an AI-Analyst role.
 
 ## Status
 
-**Phases 0-5 complete.** The three deterministic agents (Forecast, Risk, Inventory) now run as one LangGraph pipeline, verified end-to-end against Postgres with results identical to running each agent individually. No runnable API/frontend yet — next up is the Groq-backed Conversational Agent (Phase 6), then FastAPI endpoints (Phase 7) and the dashboard (Phase 8). Note: the dataset has no real inventory or cost data, so inventory levels and EOQ cost inputs are documented, config-tunable assumptions — see `context.md` for the exact formulas. This section will be updated as each phase lands; see `context.md` for a detailed running log and `backlog.md` for what's left.
+**Phases 0-6 complete.** The full agent pipeline works end-to-end, including natural-language querying: the three deterministic agents (Forecast, Risk, Inventory) run as one LangGraph pipeline, and the Groq-backed Conversational Agent answers questions grounded in their output via LangChain tool-calling — all verified against the real Groq API, not just mocks. No runnable HTTP API/frontend yet — that's Phase 7 (FastAPI) and Phase 8 (dashboard). Note: the dataset has no real inventory or cost data, so inventory levels and EOQ cost inputs are documented, config-tunable assumptions — see `context.md` for the exact formulas. This section will be updated as each phase lands; see `context.md` for a detailed running log and `backlog.md` for what's left.
 
 ## Architecture
 
@@ -101,6 +101,8 @@ The full Docker Compose stack (backend/frontend containers) and the frontend dev
 **Risk detection**: 87 of 500 SKUs flagged for stockout risk (55 high severity — will run out before a reorder could arrive; 32 medium — dangerously close), driven by the synthesized inventory's cover range against a 7-day lead time. 0 SKUs flagged as demand anomalies for the most recent week — independently verified as a genuine result (max z-score 1.61 against a 2.5 threshold, computed via a standalone diagnostic), not a silent detection failure.
 
 **Inventory recommendations**: reorder point and EOQ-based reorder quantity computed for all 500 SKUs via standard safety-stock and EOQ formulas (see `context.md` for the exact formulas and the documented cost-input assumptions, since the dataset has no real price data).
+
+**Conversational queries** (Groq, `llama-3.3-70b-versatile`, via LangChain tool-calling): verified against the real API for all 3 required query types (risk/forecast/recommendation), each resolving in exactly 1 tool call with answers matching the underlying data exactly (e.g. "what's the forecast for store 1 item 1 on 2018-01-05" -> "14.9 units", matching the DB row). Along the way, hit and fixed the exact LLM tool-calling reliability risk flagged in `docs/PRD.md` — see `context.md` for the bug and fix.
 
 A demo walkthrough (screenshots/GIF) will be added once the dashboard is built.
 

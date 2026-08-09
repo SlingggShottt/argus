@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(argus-venv/bin/python -c ' *)",
+      "Bash(argus-venv/bin/pytest -v)",
+      "Bash(argus-venv/bin/python -m app.agents.conversational_agent)"
+    ]
+  }
+}
