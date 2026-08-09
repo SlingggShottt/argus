@@ -6,7 +6,9 @@ Built as a portfolio project for an AI-Analyst role.
 
 ## Status
 
-**Phases 0-7 complete — the backend is fully runnable end-to-end.** The full agent pipeline (Forecast -> Risk -> Inventory via LangGraph, plus the Groq-backed Conversational Agent) is exposed over a real FastAPI server, verified with live HTTP requests against Postgres and the real Groq API. Only the React dashboard (Phase 8) remains. Note: the dataset has no real inventory or cost data, so inventory levels and EOQ cost inputs are documented, config-tunable assumptions — see `context.md` for the exact formulas. This section will be updated as each phase lands; see `context.md` for a detailed running log and `backlog.md` for what's left.
+**Phases 0-8 complete — the core build is fully runnable and demoable end-to-end.** The full agent pipeline (Forecast -> Risk -> Inventory via LangGraph, plus the Groq-backed Conversational Agent) is exposed over FastAPI and rendered in a React dashboard, verified with a real headless-browser run against live Postgres and the real Groq API, in both light and dark mode. Remaining: Docker Compose full-stack (Phase 9) and AWS deployment (Phase 10, should-have). Note: the dataset has no real inventory or cost data, so inventory levels and EOQ cost inputs are documented, config-tunable assumptions — see `context.md` for the exact formulas. This section will be updated as each phase lands; see `context.md` for a detailed running log and `backlog.md` for what's left.
+
+![Argus dashboard](docs/screenshots/dashboard.png)
 
 ## Architecture
 
@@ -97,7 +99,14 @@ cd backend && argus-venv/bin/pytest -v
 
 API endpoints: `GET /api/forecasts/{store_id}/{item_id}`, `GET /api/risks`, `GET /api/recommendations`, `POST /api/query` (natural-language question -> grounded answer). Full OpenAPI docs auto-generated at `/docs`.
 
-The full Docker Compose stack (backend/frontend containers) and the frontend dev server are not wired up yet (Phases 8-9 of the build plan in `CLAUDE.md`).
+**Frontend** (needs the API server running):
+```bash
+cd frontend
+npm install
+npm run dev   # http://localhost:5173, proxies /api to the backend on port 8000
+```
+
+The full Docker Compose stack (backend/frontend containers together) is not wired up yet (Phase 9 of the build plan in `CLAUDE.md`).
 
 ## Results
 
@@ -109,7 +118,7 @@ The full Docker Compose stack (backend/frontend containers) and the frontend dev
 
 **Conversational queries** (Groq, `llama-3.3-70b-versatile`, via LangChain tool-calling): verified against the real API for all 3 required query types (risk/forecast/recommendation), each resolving in exactly 1 tool call with answers matching the underlying data exactly (e.g. "what's the forecast for store 1 item 1 on 2018-01-05" -> "14.9 units", matching the DB row). Along the way, hit and fixed the exact LLM tool-calling reliability risk flagged in `docs/PRD.md` — see `context.md` for the bug and fix.
 
-A demo walkthrough (screenshots/GIF) will be added once the dashboard is built.
+**Dashboard**: verified with a real headless-browser run (Playwright) against the live stack — screenshotted in both light and dark mode, including a full chat round-trip against the real Groq API, with zero browser console errors. See screenshot above.
 
 ## Project docs
 

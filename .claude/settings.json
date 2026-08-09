@@ -15,7 +15,27 @@
       "Bash(curl -s \"http://localhost:8000/openapi.json\")",
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(list\\(d['paths'].keys\\(\\)\\)\\)\")",
       "Bash(pkill -f \"uvicorn app.main:app\")",
-      "Bash(curl -s -o /dev/null -w \"health check http code: %{http_code}\\\\n\" --max-time 2 http://localhost:8000/health)"
+      "Bash(curl -s -o /dev/null -w \"health check http code: %{http_code}\\\\n\" --max-time 2 http://localhost:8000/health)",
+      "Bash(npm --version)",
+      "Bash(npm create *)",
+      "Bash(npm install *)",
+      "Bash(npx --yes playwright --version)",
+      "Bash(node -e \"require\\('playwright'\\)\")",
+      "Bash(npm init *)",
+      "Bash(node -e ' *)",
+      "Bash(npx playwright *)",
+      "Bash(nohup npm run dev)",
+      "Bash(timeout 30 bash -c 'until curl -sf http://localhost:5173 >/dev/null; do sleep 1; done')",
+      "Bash(node verify.js)",
+      "Bash(node verify-dark.js)",
+      "Bash(lsof -ti:5173 -sTCP:LISTEN)",
+      "Bash(xargs -r kill)",
+      "Bash(lsof -ti:8000 -sTCP:LISTEN)",
+      "Bash(curl -s -o /dev/null -w \"vite: %{http_code}\\\\n\" --max-time 2 http://localhost:5173)",
+      "Bash(curl -s -o /dev/null -w \"api: %{http_code}\\\\n\" --max-time 2 http://localhost:8000/health)",
+      "Bash(npm run *)",
+      "Bash(echo \"exit code: $?\")",
+      "Read(//tmp/**)"
     ]
   }
 }

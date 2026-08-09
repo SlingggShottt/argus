@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+/* Design tokens from the dataviz skill's validated reference palette
+   (references/palette.md) -- light values on :root, dark values swapped
+   under prefers-color-scheme so charts/status colors follow the OS theme
+   automatically without any JS. Status colors are mode-invariant by design. */
+:root {
+  --surface: #fcfcfb;
+  --page: #f9f9f7;
+  --ink-primary: #0b0b0b;
+  --ink-secondary: #52514e;
+  --ink-muted: #898781;
+  --gridline: #e1e0d9;
+  --baseline: #c3c2b7;
+  --hairline: rgba(11, 11, 11, 0.1);
+  --series-1: #2a78d6;
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-serious: #ec835a;
+  --status-critical: #d03b3b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: #1a1a19;
+    --page: #0d0d0d;
+    --ink-primary: #ffffff;
+    --ink-secondary: #c3c2b7;
+    --ink-muted: #898781;
+    --gridline: #2c2c2a;
+    --baseline: #383835;
+    --hairline: rgba(255, 255, 255, 0.1);
+    --series-1: #3987e5;
+  }
+}
+
+@theme {
+  --color-surface: var(--surface);
+  --color-page: var(--page);
+  --color-ink-primary: var(--ink-primary);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-muted: var(--ink-muted);
+  --color-gridline: var(--gridline);
+  --color-baseline: var(--baseline);
+  --color-hairline: var(--hairline);
+  --color-series-1: var(--series-1);
+  --color-status-good: var(--status-good);
+  --color-status-warning: var(--status-warning);
+  --color-status-serious: var(--status-serious);
+  --color-status-critical: var(--status-critical);
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background: var(--page);
+  color: var(--ink-primary);
+}

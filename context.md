@@ -2,7 +2,7 @@
 
 Running state of the build. Read this first in any new session to get up to speed without re-explaining.
 
-## Status: Phases 0-6 complete. **Phase 7 (FastAPI endpoints) complete and verified end-to-end via real HTTP requests** — server started for real, all 5 endpoints hit with curl against live Postgres + real Groq, values matching known-good data exactly. Only the React dashboard (Phase 8) remains before the app is demoable end-to-end.
+## Status: Phases 0-7 complete. **Phase 8 (React dashboard) complete and verified via a real headless-browser run** — full stack (Vite dev server -> FastAPI -> Postgres/Groq) screenshotted and confirmed working in both light and dark mode, including a live chat round-trip against the real Groq API. Core build (Phases 1-8, the CLAUDE.md "must-have" scope) is now fully demoable end-to-end. Remaining: Docker Compose full-stack (Phase 9) and AWS deployment (Phase 10, should-have).
 
 ## What's built so far
 - Directory structure: `backend/app/{agents,models,api,db,services}`, `backend/data/{raw,processed}`, `backend/notebooks`, `backend/tests`, `frontend/src/{components,pages,api}`, `docs/`.
@@ -52,6 +52,12 @@ Running state of the build. Read this first in any new session to get up to spee
   - **Real bug found and fixed via testing**: `test_api.py`'s in-memory SQLite fixture initially failed with "no such table" — FastAPI runs sync route handlers in a worker thread, but SQLite's `:memory:` DB is connection/thread-scoped by default (each thread gets a *different* empty in-memory DB). Fixed with `poolclass=StaticPool` + `connect_args={"check_same_thread": False}`, forcing all threads to share one connection/DB. A known gotcha when combining FastAPI + SQLAlchemy + SQLite-in-memory testing.
   - **Verified via real HTTP requests**, not just pytest: started the actual server (`uvicorn app.main:app`), `curl`'d all 5 endpoints (including `/health` and a 404 case) against live Postgres + the real Groq API. Every value matched previously-verified data exactly (55 high-severity risks, forecast/recommendation numbers identical to direct-Postgres checks). Confirmed `/openapi.json` lists all 5 routes.
   - `backend/tests/test_api.py` — 6 tests: health check, forecast success/404, risk filtering, recommendation filtering, and the query endpoint with a stubbed LLM (no real API calls in the suite).
+- `frontend/` — Vite + React (JS) + Tailwind CSS v4 + TanStack React Query + Recharts, per `techstack.md`. Structure: `src/api/client.js` (centralized fetch, components never call fetch directly), `src/hooks/` (`useForecastData`, `useRisks`, `useRecommendations`, `useQueryAgent` — React Query wrappers; `useQueryAgent` is a mutation, not a query, since each chat message is a one-off POST), `src/components/` (`KpiCard`, `ForecastChart`, `RiskAlertList`, `RecommendationTable`, `ChatPanel`), `App.jsx` (layout only).
+  - `vite.config.js` proxies `/api/*` to `http://localhost:8000` in dev — components use relative paths, no hardcoded backend URL, no CORS dance locally. Phase 9's Docker/nginx setup will need an equivalent route.
+  - Design tokens (`index.css`, Tailwind v4 `@theme`) pulled directly from the **dataviz skill's validated reference palette** (`references/palette.md`) rather than inventing colors: chart chrome (surface/ink/gridline), one categorical hue (blue, `series-1`) for the forecast line, and the **status palette** (critical=high severity, warning=medium severity) — status color never carries meaning alone, paired with a text label per the skill's rule. Light/dark both defined via `prefers-color-scheme`, verified in both modes (see below).
+  - Minor structural notes vs. `CLAUDE.md`'s indicative frontend tree: added `src/hooks/` (not in the original diagram, but `style_guide.md` explicitly calls for hooks); no `src/pages/` — single-page dashboard, no router needed at this scope; Vite's React template ships `oxlint` instead of `eslint` (techstack.md said eslint/prettier) — same job (linting), left as scaffolded rather than swapped, ran clean.
+  - **Verified via a real headless-browser run**, not just "the build succeeded": installed Playwright in an isolated scratch location (not a project dependency), started the actual Vite dev server + FastAPI backend, drove Chromium against `localhost:5173`, and screenshotted the live app — twice (light mode, then a full chat round-trip against the real Groq API), plus a separate dark-mode pass (`colorScheme: 'dark'`). All KPI/forecast/risk/recommendation values matched previously-verified data exactly (55/32/500, 111.8/513.6 for store 1/item 1). Zero browser console errors. Both `npm run lint` and `npm run build` also verified clean.
+  - `npm create vite@latest` initially failed ("Operation cancelled") because the empty `frontend/src/{api,components,pages}` subdirectories from Phase 0 made it look non-empty to the non-interactive scaffolder; fixed by removing the empty tree and re-scaffolding fresh.
 
 ## Key decisions made and why
 - **Frontend is plain JavaScript/JSX, not TypeScript.** `design_architecture.md`'s original diagram said "React + TypeScript" but `techstack.md` and `style_guide.md` both specify plain JS with no TS compiler. Fixed the diagram label to match; JS is the source of truth going forward.
@@ -78,11 +84,12 @@ Running state of the build. Read this first in any new session to get up to spee
 - **Mid-build (during Phase 4), user opted out of the detailed per-file walkthrough/interview-Q&A explanations** — build fast, explain everything once the project is ready. Still flag genuinely important design decisions/gaps briefly.
 
 ## Next up
-- Phase 8: React dashboard — Vite + Tailwind scaffold, `frontend/src/api/client.js`, hooks (`useForecastData.js`, `useRisks.js`, `useRecommendations.js`), components (KPI cards, `ForecastChart`, `RiskAlertList`, `RecommendationTable`, `ChatPanel`), `App.jsx`.
+- Phase 9: Docker Compose full stack — add backend + frontend services to the existing Postgres-only `docker-compose.yml`, wire an nginx (or similar) reverse proxy so `/api/*` routes to the backend container in production, matching what Vite's dev proxy does locally.
 
 ## Local dev notes
 - Postgres runs via `docker compose up -d` (project root). Check status: `docker compose ps`. Real `.env` (git-ignored) must exist at the project root — copy from `.env.example` if missing.
 - Run the API: `cd backend && argus-venv/bin/uvicorn app.main:app --reload` (docs at `/docs`, OpenAPI schema at `/openapi.json`).
+- Run the frontend: `cd frontend && npm run dev` (http://localhost:5173, proxies `/api` to the backend on port 8000 — both must be running).
 - To (re)populate the database from the CSV: `cd backend && argus-venv/bin/python -m app.services.data_ingestion` (idempotent — safe to re-run).
 - To (re)generate forecasts: `cd backend && argus-venv/bin/python -m app.agents.forecast_agent` (idempotent — safe to re-run; requires `sales_records` to be populated first).
 - To (re)generate risk flags: `cd backend && argus-venv/bin/python -m app.agents.risk_agent` (idempotent — safe to re-run; requires `forecasts` and `inventory` to be populated first).
