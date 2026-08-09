@@ -2,7 +2,7 @@
 
 Running state of the build. Read this first in any new session to get up to speed without re-explaining.
 
-## Status: Phase 0 and Phase 1 complete. **Phase 2 (Demand Forecast Agent) complete and verified end-to-end** — XGBoost achieves 16.79% MAPE vs. 24.94% for a seasonal-naive baseline on the real dataset; 15,000 forecast rows (500 SKUs x 30-day horizon) written to Postgres. Starting Phase 3 (Anomaly/Risk Agent).
+## Status: Phases 0-2 complete. **Phase 3 (Anomaly/Risk Agent) complete and verified end-to-end** — 87 stockout flags (55 high, 32 medium) and 0 anomaly flags on the real dataset, both independently verified (not just accepted at face value). Starting Phase 4 (Inventory Optimization Agent).
 
 ## What's built so far
 - Directory structure: `backend/app/{agents,models,api,db,services}`, `backend/data/{raw,processed}`, `backend/notebooks`, `backend/tests`, `frontend/src/{components,pages,api}`, `docs/`.
@@ -29,6 +29,11 @@ Running state of the build. Read this first in any new session to get up to spee
   - Forecast model hyperparameters (`forecast_n_estimators`=300, `forecast_max_depth`=6, `forecast_learning_rate`=0.05) added to `config.py`/`.env.example` — no hardcoded magic numbers, per `style_guide.md`.
   - **Real result on the full dataset**: XGBoost 16.79% MAPE vs. seasonal-naive 24.94% MAPE — ~33% relative error reduction. 15,000 forecast rows (500 SKUs x 30-day horizon) written and spot-checked directly in Postgres.
   - `backend/tests/test_forecast_model.py` (6 tests) + `backend/tests/test_forecast_agent.py` (3 tests, DB-integration style against in-memory SQLite with `monkeypatch`-shrunk horizon for speed) — 9 tests total, all passing alongside the real end-to-end Postgres run.
+- `backend/app/agents/risk_agent.py` — `run(db) -> RiskAgentOutput`. Two independent checks combined into one `risk_flags` write:
+  - `_stockout_risk_flags()`: forward-looking, `projected_demand_over_lead_time / current_stock` — `>= 1.0` = "high" (will actually run out), `>= stockout_risk_threshold` (0.9) = "medium".
+  - `_anomaly_flags()`: backward-looking z-score, but deliberately **not** against the SKU's entire history — a full 5-year baseline would bake in yearly seasonality and make every December look like a false spike. Compares the last `anomaly_recent_window_days` (7) against a `anomaly_baseline_window_days` (60)-day window immediately before it instead, so the baseline stays seasonally close to the test period. New config: `anomaly_recent_window_days`, `anomaly_baseline_window_days` (added to `config.py`/`.env.example`).
+  - **Real result**: 87 stockout flags (55 high, 32 medium — consistent with the synthesized 3-21 day inventory cover range against a 7-day lead time) and **0 anomaly flags**. Zero was not accepted at face value — wrote a standalone diagnostic script computing the real z-score for all 500 SKUs directly; confirmed max |z| = 1.61, well under the 2.5 threshold, proving the logic runs correctly rather than silently short-circuiting. Consistent with this being a smooth, competition-grade synthetic dataset with no real-world disruptions.
+  - `backend/tests/test_risk_agent.py` — 10 tests: stockout severity tiers (high/medium/none/zero-stock), anomaly detection (spike/drop/stable/zero-variance-baseline), and a seeded 3-SKU end-to-end scenario against in-memory SQLite (one stockout-only SKU, one anomaly-only SKU, one healthy SKU producing nothing) plus idempotency.
 
 ## Key decisions made and why
 - **Frontend is plain JavaScript/JSX, not TypeScript.** `design_architecture.md`'s original diagram said "React + TypeScript" but `techstack.md` and `style_guide.md` both specify plain JS with no TS compiler. Fixed the diagram label to match; JS is the source of truth going forward.
@@ -54,9 +59,10 @@ Running state of the build. Read this first in any new session to get up to spee
 - **Update `README.md`, `context.md`, `backlog.md` before every commit, not after** — added to `CLAUDE.md` Ground Rules. The user checks these are current as part of their decision to commit.
 
 ## Next up
-- Phase 3: Anomaly/Risk Agent (`backend/app/agents/risk_agent.py`) — reads `forecasts` + `inventory`, applies the stockout threshold (`stockout_risk_threshold`, `lead_time_days`) and a z-score anomaly check (`anomaly_zscore_threshold`), writes `risk_flags`.
+- Phase 4: Inventory Optimization Agent (`backend/app/agents/inventory_agent.py`) — reads `forecasts` + `inventory`, computes reorder point/quantity via EOQ/safety-stock formulas, writes `recommendations`.
 
 ## Local dev notes
 - Postgres runs via `docker compose up -d` (project root). Check status: `docker compose ps`. Real `.env` (git-ignored) must exist at the project root — copy from `.env.example` if missing.
 - To (re)populate the database from the CSV: `cd backend && argus-venv/bin/python -m app.services.data_ingestion` (idempotent — safe to re-run).
 - To (re)generate forecasts: `cd backend && argus-venv/bin/python -m app.agents.forecast_agent` (idempotent — safe to re-run; requires `sales_records` to be populated first).
+- To (re)generate risk flags: `cd backend && argus-venv/bin/python -m app.agents.risk_agent` (idempotent — safe to re-run; requires `forecasts` and `inventory` to be populated first).

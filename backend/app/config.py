@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     forecast_horizon_days: int = 30
     stockout_risk_threshold: float = 0.9
     anomaly_zscore_threshold: float = 2.5
+    anomaly_recent_window_days: int = 7
+    anomaly_baseline_window_days: int = 60
 
     # Forecast model hyperparameters (XGBoost)
     forecast_n_estimators: int = 300
