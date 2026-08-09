@@ -41,6 +41,13 @@ class Settings(BaseSettings):
     inventory_days_of_cover_max: int = 21
     inventory_random_seed: int = 42
 
+    # Inventory optimization (EOQ / safety stock). The dataset has no
+    # cost/price data, so ordering/holding costs are documented, illustrative
+    # assumptions (same pattern as inventory synthesis), not derived values.
+    eoq_ordering_cost: float = 50.0  # fixed cost per order placed ($)
+    eoq_holding_cost_per_unit: float = 2.0  # annual holding cost per unit ($/unit/year)
+    service_level_z_score: float = 1.65  # ~95% service level, for safety stock
+
     model_config = SettingsConfigDict(env_file=_PROJECT_ROOT / ".env")
 
 

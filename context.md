@@ -2,7 +2,7 @@
 
 Running state of the build. Read this first in any new session to get up to speed without re-explaining.
 
-## Status: Phases 0-2 complete. **Phase 3 (Anomaly/Risk Agent) complete and verified end-to-end** — 87 stockout flags (55 high, 32 medium) and 0 anomaly flags on the real dataset, both independently verified (not just accepted at face value). Starting Phase 4 (Inventory Optimization Agent).
+## Status: Phases 0-3 complete. **Phase 4 (Inventory Optimization Agent) complete and verified end-to-end** — 500 reorder recommendations (one per SKU) written to Postgres, EOQ/safety-stock formulas hand-checked in tests. All 5 deterministic-pipeline tables (`sales_records`, `inventory`, `forecasts`, `risk_flags`, `recommendations`) are now populated and consistent with each other. Starting Phase 5 (LangGraph orchestrator).
 
 ## What's built so far
 - Directory structure: `backend/app/{agents,models,api,db,services}`, `backend/data/{raw,processed}`, `backend/notebooks`, `backend/tests`, `frontend/src/{components,pages,api}`, `docs/`.
@@ -34,6 +34,12 @@ Running state of the build. Read this first in any new session to get up to spee
   - `_anomaly_flags()`: backward-looking z-score, but deliberately **not** against the SKU's entire history — a full 5-year baseline would bake in yearly seasonality and make every December look like a false spike. Compares the last `anomaly_recent_window_days` (7) against a `anomaly_baseline_window_days` (60)-day window immediately before it instead, so the baseline stays seasonally close to the test period. New config: `anomaly_recent_window_days`, `anomaly_baseline_window_days` (added to `config.py`/`.env.example`).
   - **Real result**: 87 stockout flags (55 high, 32 medium — consistent with the synthesized 3-21 day inventory cover range against a 7-day lead time) and **0 anomaly flags**. Zero was not accepted at face value — wrote a standalone diagnostic script computing the real z-score for all 500 SKUs directly; confirmed max |z| = 1.61, well under the 2.5 threshold, proving the logic runs correctly rather than silently short-circuiting. Consistent with this being a smooth, competition-grade synthetic dataset with no real-world disruptions.
   - `backend/tests/test_risk_agent.py` — 10 tests: stockout severity tiers (high/medium/none/zero-stock), anomaly detection (spike/drop/stable/zero-variance-baseline), and a seeded 3-SKU end-to-end scenario against in-memory SQLite (one stockout-only SKU, one anomaly-only SKU, one healthy SKU producing nothing) plus idempotency.
+- `backend/app/agents/inventory_agent.py` — `run(db) -> InventoryAgentOutput`. Reads forecasted demand (mean + std per SKU across the horizon), not raw historical sales, since the forward-looking estimate should drive reorder decisions.
+  - `reorder_point = avg_daily_demand * lead_time_days + safety_stock`, where `safety_stock = service_level_z_score * demand_std * sqrt(lead_time_days)` — standard safety-stock formula; `sqrt(lead_time_days)` because standard deviation (not variance) scales with the square root of time.
+  - `reorder_quantity` = classic EOQ: `sqrt((2 * annual_demand * eoq_ordering_cost) / eoq_holding_cost_per_unit)`.
+  - **Another documented data gap**: the dataset has no cost/price data at all, so `eoq_ordering_cost` ($50/order) and `eoq_holding_cost_per_unit` ($2/unit/year) are illustrative, config-tunable assumptions — same pattern as inventory synthesis. `service_level_z_score` (1.65, ~95% service level) also added. All three in `config.py`/`.env.example`.
+  - **Real result**: 500 recommendations written (one per SKU), cross-checked against `inventory`/`forecasts` in Postgres — e.g. store 1/item 5 has `current_stock` (80.4) already below its computed `reorder_point` (92.7), consistent with that SKU's known thin stock.
+  - `backend/tests/test_inventory_agent.py` — 7 tests, including hand-calculated EOQ/safety-stock values verified via `pytest.approx` against the formula computed by hand, not just "did it run without erroring."
 
 ## Key decisions made and why
 - **Frontend is plain JavaScript/JSX, not TypeScript.** `design_architecture.md`'s original diagram said "React + TypeScript" but `techstack.md` and `style_guide.md` both specify plain JS with no TS compiler. Fixed the diagram label to match; JS is the source of truth going forward.
@@ -59,10 +65,11 @@ Running state of the build. Read this first in any new session to get up to spee
 - **Update `README.md`, `context.md`, `backlog.md` before every commit, not after** — added to `CLAUDE.md` Ground Rules. The user checks these are current as part of their decision to commit.
 
 ## Next up
-- Phase 4: Inventory Optimization Agent (`backend/app/agents/inventory_agent.py`) — reads `forecasts` + `inventory`, computes reorder point/quantity via EOQ/safety-stock formulas, writes `recommendations`.
+- Phase 5: LangGraph orchestrator (`backend/app/agents/orchestrator.py`) — sequences Forecast -> Risk -> Inventory, logs intermediate outputs (NFR-2), produces one combined output object for the API/Conversational Agent to consume.
 
 ## Local dev notes
 - Postgres runs via `docker compose up -d` (project root). Check status: `docker compose ps`. Real `.env` (git-ignored) must exist at the project root — copy from `.env.example` if missing.
 - To (re)populate the database from the CSV: `cd backend && argus-venv/bin/python -m app.services.data_ingestion` (idempotent — safe to re-run).
 - To (re)generate forecasts: `cd backend && argus-venv/bin/python -m app.agents.forecast_agent` (idempotent — safe to re-run; requires `sales_records` to be populated first).
 - To (re)generate risk flags: `cd backend && argus-venv/bin/python -m app.agents.risk_agent` (idempotent — safe to re-run; requires `forecasts` and `inventory` to be populated first).
+- To (re)generate recommendations: `cd backend && argus-venv/bin/python -m app.agents.inventory_agent` (idempotent — safe to re-run; requires `forecasts` to be populated first).

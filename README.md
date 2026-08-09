@@ -6,7 +6,7 @@ Built as a portfolio project for an AI-Analyst role.
 
 ## Status
 
-**Phases 0-3 complete.** The database is live and populated: 913,000 real sales rows, a synthesized inventory snapshot (500 store-item rows), 15,000 demand forecast rows (500 SKUs x 30-day horizon), and 87 risk flags (stockout + anomaly) in Postgres via Docker Compose — all verified end-to-end, not just unit tests. No runnable API/frontend yet — that starts once the Inventory Optimization Agent is built (Phase 4) and the orchestrator ties everything together (Phase 5). Note: the dataset has no real inventory data, so inventory levels are synthesized at ingestion time from trailing sales averages — see `context.md` for the exact formula and assumptions. This section will be updated as each phase lands; see `context.md` for a detailed running log and `backlog.md` for what's left.
+**Phases 0-4 complete.** All 5 pipeline tables are populated in Postgres and consistent with each other: 913,000 real sales rows, a synthesized inventory snapshot (500 rows), 15,000 demand forecast rows, 87 risk flags, and 500 reorder recommendations — all verified end-to-end, not just unit tests. No runnable API/frontend yet — that starts once the LangGraph orchestrator ties the three deterministic agents together (Phase 5). Note: the dataset has no real inventory or cost data, so inventory levels and EOQ cost inputs are documented, config-tunable assumptions — see `context.md` for the exact formulas. This section will be updated as each phase lands; see `context.md` for a detailed running log and `backlog.md` for what's left.
 
 ## Architecture
 
@@ -77,13 +77,14 @@ cp .env.example .env
 # Start Postgres (Docker Compose is Postgres-only for now — full stack is Phase 9)
 docker compose up -d
 
-# Create the database tables, load and clean the dataset, forecast, then
-# assess risk (each step is idempotent — safe to re-run)
+# Create the database tables, then run the full deterministic pipeline
+# (each step is idempotent — safe to re-run)
 cd backend
 argus-venv/bin/python -c "from app.db.session import init_db; init_db()"
 argus-venv/bin/python -m app.services.data_ingestion
 argus-venv/bin/python -m app.agents.forecast_agent
 argus-venv/bin/python -m app.agents.risk_agent
+argus-venv/bin/python -m app.agents.inventory_agent
 ```
 
 Dataset: the Kaggle [Store Item Demand Forecasting](https://www.kaggle.com/c/demand-forecasting-kernels-only/data) `train.csv` and `test.csv` are expected in `backend/data/raw/` (not committed — see `.gitignore`).
@@ -100,6 +101,8 @@ The full Docker Compose stack (backend/frontend containers) and the frontend dev
 **Demand forecast (XGBoost, global model across all 500 store-item combinations)**: 16.79% MAPE on a held-out 30-day window, vs. 24.94% MAPE for a seasonal-naive baseline (predicting each day from the same SKU's actual sales 7 days earlier) — roughly a third lower error than a reasonable, non-trivial baseline. Evaluated on a strict temporal holdout (trained only on data before the held-out window, never a random shuffle-split, which would leak future information). See `context.md` for the full methodology.
 
 **Risk detection**: 87 of 500 SKUs flagged for stockout risk (55 high severity — will run out before a reorder could arrive; 32 medium — dangerously close), driven by the synthesized inventory's cover range against a 7-day lead time. 0 SKUs flagged as demand anomalies for the most recent week — independently verified as a genuine result (max z-score 1.61 against a 2.5 threshold, computed via a standalone diagnostic), not a silent detection failure.
+
+**Inventory recommendations**: reorder point and EOQ-based reorder quantity computed for all 500 SKUs via standard safety-stock and EOQ formulas (see `context.md` for the exact formulas and the documented cost-input assumptions, since the dataset has no real price data).
 
 A demo walkthrough (screenshots/GIF) will be added once the dashboard is built.
 
