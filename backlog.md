@@ -4,7 +4,7 @@ Pending work, known gaps, and deferred items. Update as items complete or new on
 
 ## Build order (from CLAUDE.md, not yet done)
 - [x] 1. Data ingestion + cleaning (Kaggle Store Item Demand Forecasting) — complete. 913,000 sales rows + 500 synthesized inventory rows loaded and verified in the live Postgres container.
-- [ ] 2. Demand Forecast Agent (XGBoost baseline)
+- [x] 2. Demand Forecast Agent (XGBoost baseline) — complete. 16.79% MAPE vs. 24.94% seasonal-naive baseline on the real dataset; 15,000 forecast rows verified in Postgres.
 - [ ] 3. Anomaly/Risk Agent (rule-based thresholds + z-score)
 - [ ] 4. Inventory Optimization Agent (EOQ / safety stock)
 - [ ] 5. LangGraph orchestrator tying agents together
@@ -34,7 +34,9 @@ Pending work, known gaps, and deferred items. Update as items complete or new on
 - Forecast quality depends on dataset cleanliness — don't skip EDA during Phase 1.
 - `sample_submission.csv` was deliberately excluded from the repo — if `test.csv`'s Kaggle-specific time-based public/private split logic matters later, revisit whether `test.csv` is even usable for our purposes (we may only need `train.csv` for a self-made holdout split, per SRS FR-2.3 "against a holdout set").
 - Inventory levels are synthetic, not real (see `context.md` Deviations section for the full formula/assumptions) — worth calling out proactively in the interview before it looks like an oversight.
+- Forecast model uses calendar features only, no lag/rolling-window features — a deliberate v1 simplicity call (avoids recursive multi-step forecasting complexity), documented as a known limitation, not an oversight. Candidate future improvement if time allows.
 
 ## Completed
 - [x] Phase 0 scaffolding: directory structure, docs moved to `docs/`, `.gitignore`, `.env.example`, `requirements.txt`, `config.py`, git initialized, dataset downloaded.
 - [x] Phase 1 data ingestion: DB models/session layer (tested against SQLite + verified against live Postgres), Postgres-only `docker-compose.yml`, ingestion script (cleaning, idempotent load, inventory synthesis), 18 backend tests passing. Two real bugs found and fixed via testing against real Postgres, not just SQLite unit tests (see `context.md`).
+- [x] Phase 2 Demand Forecast Agent: XGBoost model wrapper + agent, temporal holdout evaluation vs. seasonal-naive baseline, 27 backend tests passing (9 new), verified end-to-end against the real 913K-row dataset in Postgres.

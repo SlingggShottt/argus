@@ -2,7 +2,7 @@
 
 Running state of the build. Read this first in any new session to get up to speed without re-explaining.
 
-## Status: Phase 0 complete and committed. **Phase 1 (data ingestion) complete and verified end-to-end** — 913,000 real sales rows and 500 synthesized inventory rows are loaded in the live Postgres container. Starting Phase 2 (Demand Forecast Agent).
+## Status: Phase 0 and Phase 1 complete. **Phase 2 (Demand Forecast Agent) complete and verified end-to-end** — XGBoost achieves 16.79% MAPE vs. 24.94% for a seasonal-naive baseline on the real dataset; 15,000 forecast rows (500 SKUs x 30-day horizon) written to Postgres. Starting Phase 3 (Anomaly/Risk Agent).
 
 ## What's built so far
 - Directory structure: `backend/app/{agents,models,api,db,services}`, `backend/data/{raw,processed}`, `backend/notebooks`, `backend/tests`, `frontend/src/{components,pages,api}`, `docs/`.
@@ -24,6 +24,11 @@ Running state of the build. Read this first in any new session to get up to spee
   - **Second real bug found and fixed**: `psycopg2` can't adapt numpy scalar types (`numpy.int64`, etc.) that pandas produces — would have thrown `can't adapt type 'numpy.int64'` against real Postgres, but passed silently against SQLite in unit tests (SQLite's driver is more permissive). Added `_to_native_records()` to convert numpy scalars to native Python types before insert. Caught by deliberately validating against the real Postgres container instead of trusting SQLite-backed tests alone — same lesson as the `.env` bug, now a established habit for this project.
   - Ran against the full real dataset (not just test fixtures): 913,000 sales rows loaded, 500 inventory rows synthesized (10 stores × 50 items, as expected), spot-checked in Postgres directly.
   - `backend/tests/test_data_ingestion.py` — 7 tests covering cleaning edge cases (bad dates, negative sales, duplicates, missing columns) and DB logic (idempotency, one-row-per-SKU, seeded reproducibility) against in-memory SQLite.
+- `backend/app/models/forecast_model.py` — `ForecastModel` (XGBoost wrapper, one global model across all 500 SKUs, not per-SKU models), `_add_calendar_features()` (year/month/day/day_of_week/day_of_year/week_of_year — no lag/rolling features in v1, documented simplicity call, see backlog "Known gaps"), `mean_absolute_percentage_error()`, `seasonal_naive_forecast()` (lag-7 baseline, looks up real historical values from the full sales history so no future information leaks in even when the lag lands inside the holdout window). Predictions clipped to >= 0 (demand can't be negative; XGBoost regression has no floor on its own).
+- `backend/app/agents/forecast_agent.py` — `run(db) -> ForecastAgentOutput` (typed entrypoint per style_guide.md's agent convention). Temporal train/holdout split (not random shuffle — would leak future info), evaluates XGBoost vs. the seasonal-naive baseline, then retrains on the full dataset before writing the real forecast. Delete-then-insert into `forecasts`, same idempotency pattern as ingestion.
+  - Forecast model hyperparameters (`forecast_n_estimators`=300, `forecast_max_depth`=6, `forecast_learning_rate`=0.05) added to `config.py`/`.env.example` — no hardcoded magic numbers, per `style_guide.md`.
+  - **Real result on the full dataset**: XGBoost 16.79% MAPE vs. seasonal-naive 24.94% MAPE — ~33% relative error reduction. 15,000 forecast rows (500 SKUs x 30-day horizon) written and spot-checked directly in Postgres.
+  - `backend/tests/test_forecast_model.py` (6 tests) + `backend/tests/test_forecast_agent.py` (3 tests, DB-integration style against in-memory SQLite with `monkeypatch`-shrunk horizon for speed) — 9 tests total, all passing alongside the real end-to-end Postgres run.
 
 ## Key decisions made and why
 - **Frontend is plain JavaScript/JSX, not TypeScript.** `design_architecture.md`'s original diagram said "React + TypeScript" but `techstack.md` and `style_guide.md` both specify plain JS with no TS compiler. Fixed the diagram label to match; JS is the source of truth going forward.
@@ -49,8 +54,9 @@ Running state of the build. Read this first in any new session to get up to spee
 - **Update `README.md`, `context.md`, `backlog.md` before every commit, not after** — added to `CLAUDE.md` Ground Rules. The user checks these are current as part of their decision to commit.
 
 ## Next up
-- Phase 2: Demand Forecast Agent — `backend/app/models/forecast_model.py` (XGBoost train/predict) then `backend/app/agents/forecast_agent.py` (typed `run()` entrypoint), reading from `sales_records` now that it's populated.
+- Phase 3: Anomaly/Risk Agent (`backend/app/agents/risk_agent.py`) — reads `forecasts` + `inventory`, applies the stockout threshold (`stockout_risk_threshold`, `lead_time_days`) and a z-score anomaly check (`anomaly_zscore_threshold`), writes `risk_flags`.
 
 ## Local dev notes
 - Postgres runs via `docker compose up -d` (project root). Check status: `docker compose ps`. Real `.env` (git-ignored) must exist at the project root — copy from `.env.example` if missing.
 - To (re)populate the database from the CSV: `cd backend && argus-venv/bin/python -m app.services.data_ingestion` (idempotent — safe to re-run).
+- To (re)generate forecasts: `cd backend && argus-venv/bin/python -m app.agents.forecast_agent` (idempotent — safe to re-run; requires `sales_records` to be populated first).

@@ -6,7 +6,7 @@ Built as a portfolio project for an AI-Analyst role.
 
 ## Status
 
-**Phase 0 and Phase 1 (data ingestion) complete.** The database is live and populated: 913,000 real sales rows plus a synthesized inventory snapshot (500 store-item rows) in Postgres via Docker Compose, all verified end-to-end (not just unit tests). No runnable API/frontend yet — that starts with the Forecast Agent in Phase 2. Note: the dataset has no real inventory data, so inventory levels are synthesized at ingestion time from trailing sales averages — see `context.md` for the exact formula and assumptions. This section will be updated as each phase lands; see `context.md` for a detailed running log and `backlog.md` for what's left.
+**Phases 0-2 complete.** The database is live and populated: 913,000 real sales rows, a synthesized inventory snapshot (500 store-item rows), and 15,000 demand forecast rows (500 SKUs x 30-day horizon) in Postgres via Docker Compose — all verified end-to-end, not just unit tests. No runnable API/frontend yet — that starts once the Risk and Inventory agents are built (Phases 3-4) and the orchestrator ties them together (Phase 5). Note: the dataset has no real inventory data, so inventory levels are synthesized at ingestion time from trailing sales averages — see `context.md` for the exact formula and assumptions. This section will be updated as each phase lands; see `context.md` for a detailed running log and `backlog.md` for what's left.
 
 ## Architecture
 
@@ -77,11 +77,12 @@ cp .env.example .env
 # Start Postgres (Docker Compose is Postgres-only for now — full stack is Phase 9)
 docker compose up -d
 
-# Create the database tables, then load and clean the dataset
-# (idempotent — safe to re-run; also synthesizes the inventory snapshot)
+# Create the database tables, load and clean the dataset, then forecast
+# (each step is idempotent — safe to re-run)
 cd backend
 argus-venv/bin/python -c "from app.db.session import init_db; init_db()"
 argus-venv/bin/python -m app.services.data_ingestion
+argus-venv/bin/python -m app.agents.forecast_agent
 ```
 
 Dataset: the Kaggle [Store Item Demand Forecasting](https://www.kaggle.com/c/demand-forecasting-kernels-only/data) `train.csv` and `test.csv` are expected in `backend/data/raw/` (not committed — see `.gitignore`).
@@ -95,7 +96,9 @@ The full Docker Compose stack (backend/frontend containers) and the frontend dev
 
 ## Results
 
-Not yet available — forecast accuracy (MAPE vs. a naive baseline) and a demo walkthrough will be added here once the Forecast Agent and dashboard are built.
+**Demand forecast (XGBoost, global model across all 500 store-item combinations)**: 16.79% MAPE on a held-out 30-day window, vs. 24.94% MAPE for a seasonal-naive baseline (predicting each day from the same SKU's actual sales 7 days earlier) — roughly a third lower error than a reasonable, non-trivial baseline. Evaluated on a strict temporal holdout (trained only on data before the held-out window, never a random shuffle-split, which would leak future information). See `context.md` for the full methodology.
+
+A demo walkthrough (screenshots/GIF) will be added once the dashboard is built.
 
 ## Project docs
 

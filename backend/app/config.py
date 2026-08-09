@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     stockout_risk_threshold: float = 0.9
     anomaly_zscore_threshold: float = 2.5
 
+    # Forecast model hyperparameters (XGBoost)
+    forecast_n_estimators: int = 300
+    forecast_max_depth: int = 6
+    forecast_learning_rate: float = 0.05
+
     # Inventory synthesis (dataset has no real inventory data, see context.md)
     lead_time_days: int = 7
     inventory_lookback_days: int = 90
