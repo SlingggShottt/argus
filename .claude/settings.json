@@ -45,7 +45,12 @@
       "Bash(docker network *)",
       "Bash(docker run *)",
       "Bash(docker stop *)",
-      "Bash(docker rm *)"
+      "Bash(docker rm *)",
+      "Bash(curl -s \"http://localhost:8000/api/risks\")",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\)['data']; from collections import Counter; print\\(Counter\\(r['severity'] for r in d if r['risk_type']=='stockout'\\)\\)\")",
+      "Bash(python3 -m json.tool)",
+      "Bash(DATABASE_URL=\"postgresql://argus:8IMJGMbkqnMEXINQDXdimKbUn9WvJuA5@dpg-d9sbsjvavr4c73aukk00-a.oregon-postgres.render.com/argus_dt91\" argus-venv/bin/python -m app.agents.orchestrator)",
+      "Bash(curl -s \"https://argus-backend-a4y6.onrender.com/api/risks\")"
     ],
     "additionalDirectories": [
       "/tmp/claude-1000/-home-slingggshottt-Desktop-coding-Projects-argus/e5626df3-82a1-41ab-b780-3a7bd62a2ba1/scratchpad/node_modules"

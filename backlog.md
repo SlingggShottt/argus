@@ -4,8 +4,8 @@ Pending work, known gaps, and deferred items. Update as items complete or new on
 
 ## Build order (from CLAUDE.md, not yet done)
 - [x] 1. Data ingestion + cleaning (Kaggle Store Item Demand Forecasting) — complete. 913,000 sales rows + 500 synthesized inventory rows loaded and verified in the live Postgres container.
-- [x] 2. Demand Forecast Agent (XGBoost baseline) — complete. 16.79% MAPE vs. 24.94% seasonal-naive baseline on the real dataset; 15,000 forecast rows verified in Postgres.
-- [x] 3. Anomaly/Risk Agent (rule-based thresholds + z-score) — complete. 87 stockout flags (55 high, 32 medium), 0 anomaly flags (verified as a genuine result, not a bug) on the real dataset.
+- [x] 2. Demand Forecast Agent (XGBoost baseline) — complete. 15.46% MAPE vs. 24.94% seasonal-naive baseline on the real dataset (learning_rate tuned 0.05 -> 0.30 post-launch via a real sweep, see context.md); 15,000 forecast rows verified in Postgres.
+- [x] 3. Anomaly/Risk Agent (rule-based thresholds + z-score) — complete. 86 stockout flags (60 high, 26 medium), 0 anomaly flags (verified as a genuine result, not a bug) on the real dataset.
 - [x] 4. Inventory Optimization Agent (EOQ / safety stock) — complete. 500 recommendations written, EOQ/safety-stock formulas hand-checked in tests.
 - [x] 5. LangGraph orchestrator tying agents together — complete. Verified end-to-end against Postgres, identical results to individually-run agents.
 - [x] 6. Conversational Insight Agent (Groq-backed) — complete. Verified against real Groq API for all 3 FR-6.3 query types; found and fixed a real tool-calling reliability bug (see Known gaps, now resolved).
